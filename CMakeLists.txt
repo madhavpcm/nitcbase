@@ -1,0 +1,30 @@
+cmake_minimum_required(VERSION 3.10)
+
+project(nitcbase LANGUAGES CXX)
+
+# Subdirectories of each component
+add_subdirectory(Algebra)
+add_subdirectory(BlockAccess)
+add_subdirectory(BPlusTree)
+add_subdirectory(Buffer)
+add_subdirectory(Cache)
+add_subdirectory(Disk_Class)
+add_subdirectory(Frontend)
+add_subdirectory(FrontendInterface)
+add_subdirectory(Schema)
+
+# Executable
+add_executable(nitcbase main.cpp)
+
+target_link_libraries(nitcbase 
+	Algebra 
+	BlockAccess
+	BPlusTree
+	Buffer
+	Cache
+	Disk_Class
+	Frontend
+	FrontendInterface 
+	Schema
+)
+
