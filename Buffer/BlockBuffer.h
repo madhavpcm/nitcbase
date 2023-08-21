@@ -1,6 +1,4 @@
-#ifndef NITCBASE_BLOCKBUFFER_H
-#define NITCBASE_BLOCKBUFFER_H
-
+#pragma once
 #include <cstdint>
 
 #include "../Disk_Class/Disk.h"
@@ -39,7 +37,7 @@ struct Index {
 };
 
 class BlockBuffer {
- protected:
+protected:
   // field
   int blockNum;
   // methods
@@ -47,7 +45,7 @@ class BlockBuffer {
   int getFreeBlock(int blockType);
   int setBlockType(int blockType);
 
- public:
+public:
   // methods
   BlockBuffer(char blockType);
   BlockBuffer(int blockNum);
@@ -58,7 +56,7 @@ class BlockBuffer {
 };
 
 class RecBuffer : public BlockBuffer {
- public:
+public:
   // methods
   RecBuffer();
   RecBuffer(int blockNum);
@@ -69,7 +67,7 @@ class RecBuffer : public BlockBuffer {
 };
 
 class IndBuffer : public BlockBuffer {
- public:
+public:
   IndBuffer(int blockNum);
   IndBuffer(char blockType);
   virtual int getEntry(void *ptr, int indexNum) = 0;
@@ -77,7 +75,7 @@ class IndBuffer : public BlockBuffer {
 };
 
 class IndInternal : public IndBuffer {
- public:
+public:
   IndInternal();
   IndInternal(int blockNum);
   int getEntry(void *ptr, int indexNum);
@@ -85,11 +83,10 @@ class IndInternal : public IndBuffer {
 };
 
 class IndLeaf : public IndBuffer {
- public:
+public:
   IndLeaf();
   IndLeaf(int blockNum);
   int getEntry(void *ptr, int indexNum);
   int setEntry(void *ptr, int indexNum);
 };
 
-#endif  // NITCBASE_BLOCKBUFFER_H

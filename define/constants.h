@@ -1,3 +1,4 @@
+#include<cstdint>
 #ifndef NITCBASE_CONSTANTS_H
 #define NITCBASE_CONSTANTS_H
 
@@ -45,6 +46,7 @@
 #define RELCAT_SLOTNUM_FOR_ATTRCAT 1  // Slot number for attribute catalog in relation catalog
 
 #define INVALID_BLOCKNUM -1  // Indicates the Block number as Invalid.
+
 
 enum AttributeType {
   NUMBER = 0,  // for an integer or a floating point number
@@ -148,5 +150,7 @@ enum ReturnTypes {
 #define ATTRCAT_ATTR_PRIMARY_FLAG "PrimaryFlag"
 #define ATTRCAT_ATTR_ROOT_BLOCK "RootBlock"
 #define ATTRCAT_ATTR_OFFSET "Offset"
+
+#define SLOTMAPSIZE(x) ((2016) / ((16 * x) + 1))
 
 #endif  // NITCBASE_CONSTANTS_H

@@ -35,63 +35,63 @@
 #define REGEX(c) std::regex(c, std::regex_constants::icase)
 
 class RegexHandler {
-  typedef int (RegexHandler::*handlerFunction)(void);  // function pointer type
+	typedef int (RegexHandler::*handlerFunction)(void);  // function pointer type
 
- private:
-  // command to handler mappings
-  const std::vector<std::pair<std::regex, handlerFunction>> handlers = {
-      {REGEX(HELP_CMD), &RegexHandler::helpHandler},
-      {REGEX(EXIT_CMD), &RegexHandler::exitHandler},
-      {REGEX(ECHO_CMD), &RegexHandler::echoHandler},
-      {REGEX(RUN_CMD), &RegexHandler::runHandler},
-      {REGEX(OPEN_TABLE_CMD), &RegexHandler::openHandler},
-      {REGEX(CLOSE_TABLE_CMD), &RegexHandler::closeHandler},
-      {REGEX(CREATE_TABLE_CMD), &RegexHandler::createTableHandler},
-      {REGEX(DROP_TABLE_CMD), &RegexHandler::dropTableHandler},
-      {REGEX(CREATE_INDEX_CMD), &RegexHandler::createIndexHandler},
-      {REGEX(DROP_INDEX_CMD), &RegexHandler::dropIndexHandler},
-      {REGEX(RENAME_TABLE_CMD), &RegexHandler::renameTableHandler},
-      {REGEX(RENAME_COLUMN_CMD), &RegexHandler::renameColumnHandler},
-      {REGEX(INSERT_SINGLE_CMD), &RegexHandler::insertSingleHandler},
-      {REGEX(INSERT_MULTIPLE_CMD), &RegexHandler::insertFromFileHandler},
-      {REGEX(SELECT_FROM_CMD), &RegexHandler::selectFromHandler},
-      {REGEX(SELECT_FROM_WHERE_CMD), &RegexHandler::selectFromWhereHandler},
-      {REGEX(SELECT_ATTR_FROM_CMD), &RegexHandler::selectAttrFromHandler},
-      {REGEX(SELECT_ATTR_FROM_WHERE_CMD), &RegexHandler::selectAttrFromWhereHandler},
-      {REGEX(SELECT_FROM_JOIN_CMD), &RegexHandler::selectFromJoinHandler},
-      {REGEX(SELECT_ATTR_FROM_JOIN_CMD), &RegexHandler::selectAttrFromJoinHandler},
-      {REGEX(CUSTOM_CMD), &RegexHandler::customFunctionHandler},
-  };
+	private:
+	// command to handler mappings
+	const std::vector<std::pair<std::regex, handlerFunction>> handlers = {
+		{REGEX(HELP_CMD), &RegexHandler::helpHandler},
+		{REGEX(EXIT_CMD), &RegexHandler::exitHandler},
+		{REGEX(ECHO_CMD), &RegexHandler::echoHandler},
+		{REGEX(RUN_CMD), &RegexHandler::runHandler},
+		{REGEX(OPEN_TABLE_CMD), &RegexHandler::openHandler},
+		{REGEX(CLOSE_TABLE_CMD), &RegexHandler::closeHandler},
+		{REGEX(CREATE_TABLE_CMD), &RegexHandler::createTableHandler},
+		{REGEX(DROP_TABLE_CMD), &RegexHandler::dropTableHandler},
+		{REGEX(CREATE_INDEX_CMD), &RegexHandler::createIndexHandler},
+		{REGEX(DROP_INDEX_CMD), &RegexHandler::dropIndexHandler},
+		{REGEX(RENAME_TABLE_CMD), &RegexHandler::renameTableHandler},
+		{REGEX(RENAME_COLUMN_CMD), &RegexHandler::renameColumnHandler},
+		{REGEX(INSERT_SINGLE_CMD), &RegexHandler::insertSingleHandler},
+		{REGEX(INSERT_MULTIPLE_CMD), &RegexHandler::insertFromFileHandler},
+		{REGEX(SELECT_FROM_CMD), &RegexHandler::selectFromHandler},
+		{REGEX(SELECT_FROM_WHERE_CMD), &RegexHandler::selectFromWhereHandler},
+		{REGEX(SELECT_ATTR_FROM_CMD), &RegexHandler::selectAttrFromHandler},
+		{REGEX(SELECT_ATTR_FROM_WHERE_CMD), &RegexHandler::selectAttrFromWhereHandler},
+		{REGEX(SELECT_FROM_JOIN_CMD), &RegexHandler::selectFromJoinHandler},
+		{REGEX(SELECT_ATTR_FROM_JOIN_CMD), &RegexHandler::selectAttrFromJoinHandler},
+		{REGEX(CUSTOM_CMD), &RegexHandler::customFunctionHandler},
+	};
 
-  // extract tokens delimited by whitespace and comma
-  std::vector<std::string> extractTokens(std::string input);
+	// extract tokens delimited by whitespace and comma
+	std::vector<std::string> extractTokens(std::string input);
 
-  // handler functions
-  std::smatch m;  // to store matches while parsing the regex
-  int helpHandler();
-  int exitHandler();
-  int echoHandler();
-  int runHandler();
-  int openHandler();
-  int closeHandler();
-  int createTableHandler();
-  int dropTableHandler();
-  int createIndexHandler();
-  int dropIndexHandler();
-  int renameTableHandler();
-  int renameColumnHandler();
-  int insertSingleHandler();
-  int insertFromFileHandler();
-  int selectFromHandler();
-  int selectFromWhereHandler();
-  int selectAttrFromHandler();
-  int selectAttrFromWhereHandler();
-  int selectFromJoinHandler();
-  int selectAttrFromJoinHandler();
-  int customFunctionHandler();
+	// handler functions
+	std::smatch m;  // to store matches while parsing the regex
+	int helpHandler();
+	int exitHandler();
+	int echoHandler();
+	int runHandler();
+	int openHandler();
+	int closeHandler();
+	int createTableHandler();
+	int dropTableHandler();
+	int createIndexHandler();
+	int dropIndexHandler();
+	int renameTableHandler();
+	int renameColumnHandler();
+	int insertSingleHandler();
+	int insertFromFileHandler();
+	int selectFromHandler();
+	int selectFromWhereHandler();
+	int selectAttrFromHandler();
+	int selectAttrFromWhereHandler();
+	int selectFromJoinHandler();
+	int selectAttrFromJoinHandler();
+	int customFunctionHandler();
 
- public:
-  int handle(const std::string command);
+	public:
+	int handle(const std::string command);
 };
 
 #endif  // REGEX_HANDLER_H

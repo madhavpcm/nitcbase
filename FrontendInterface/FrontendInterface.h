@@ -4,11 +4,11 @@
 #include "RegexHandler.h"
 
 class FrontendInterface {
- private:
-  static RegexHandler regexHandler;
+	private:
+		static RegexHandler regexHandler;
 
- public:
-  static int handleFrontend(int argc, char *argv[]);
+	public:
+		static int handleFrontend(int argc, char *argv[]);
 };
 
 #endif

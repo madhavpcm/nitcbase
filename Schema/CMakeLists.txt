@@ -1,5 +1,5 @@
-add_library( Schema 
-	Schema.cpp 
+add_library( Schema
+	Schema.cpp
 	Schema.h
 )
 

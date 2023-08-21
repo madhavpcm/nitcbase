@@ -1,5 +1,5 @@
-add_library( FrontendInterface 
-	FrontendInterface.cpp 
+add_library( FrontendInterface
+	FrontendInterface.cpp
 	FrontendInterface.h
 )
 add_library( RegexHandler
