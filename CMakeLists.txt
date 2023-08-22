@@ -17,15 +17,14 @@ add_subdirectory(Schema)
 # Executable
 add_executable(nitcbase main.cpp)
 
-target_link_libraries(nitcbase 
-	Algebra 
-	BlockAccess
-	BPlusTree
-	Buffer
-	Cache
-	Disk_Class
-	Frontend
-	FrontendInterface 
-	Schema
-)
-
+target_link_libraries(
+  nitcbase
+  Algebra
+  BlockAccess
+  BPlusTree
+  Buffer
+  Cache
+  Disk_Class
+  Frontend
+  FrontendInterface
+  Schema)

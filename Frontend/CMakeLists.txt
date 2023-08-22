@@ -1,8 +1,3 @@
-add_library( Frontend 
-	Frontend.cpp 
-	Frontend.h
-)
+add_library(Frontend Frontend.cpp Frontend.h)
 
-target_include_directories(Frontend
-	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-)
+target_include_directories(Frontend PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

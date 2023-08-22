@@ -9,22 +9,20 @@
 #include "../define/id.h"
 
 class BlockAccess {
-public:
-  static int search(int relId, Attribute *record, char *attrName,
-                    Attribute attrVal, int op);
+  public:
+	static int search( int relId, Attribute* record, char* attrName, Attribute attrVal, int op );
 
-  static int insert(int relId, union Attribute *record);
+	static int insert( int relId, union Attribute* record );
 
-  static int renameRelation(char *oldName, char *newName);
+	static int renameRelation( char* oldName, char* newName );
 
-  static int renameAttribute(char *relName, char *oldName, char *newName);
+	static int renameAttribute( char* relName, char* oldName, char* newName );
 
-  static int deleteRelation(char *relName);
+	static int deleteRelation( char* relName );
 
-  static RecId linearSearch(int relId, char *attrName, Attribute attrVal,
-                            int op);
+	static RecId linearSearch( int relId, char* attrName, Attribute attrVal, int op );
 
-  static int project(int relId, Attribute *record);
+	static int project( int relId, Attribute* record );
 };
 
 #endif // NITCBASE_BLOCKACCESS_H
