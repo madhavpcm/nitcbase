@@ -17,16 +17,12 @@ int main( int argc, char* argv[] ) {
 	Disk disk_run;
 
 	RecBuffer relCatBuffer( RELCAT_BLOCK );
-	RecBuffer attrCatBuffer( ATTRCAT_BLOCK );
 
 	HeadInfo relCatHeader;
-	HeadInfo attrCatHeader;
 
 	relCatBuffer.getHeader( &relCatHeader );
-	attrCatBuffer.getHeader( &attrCatHeader );
 
 	std::cout << relCatHeader.numEntries << " RELCAT entries detected.\n";
-	std::cout << attrCatHeader.numEntries << " ATTRCAT entries detected.\n";
 	for ( int rel = 0; rel < relCatHeader.numEntries; rel++ ) {
 		// Record, ie relation in relcat
 		std::array<Attribute, RELCAT_NO_ATTRS> relCatRecord;
@@ -34,18 +30,27 @@ int main( int argc, char* argv[] ) {
 		relCatBuffer.getRecord( relCatRecord.data( ), rel );
 
 		std::cout << "Relation: " << relCatRecord[ RELCAT_REL_NAME_INDEX ].sVal << '\n';
+		int attrCatBlockNum = ATTRCAT_BLOCK;
+		HeadInfo attrCatHeader;
 
-		for ( int attr = 0; attr < attrCatHeader.numEntries; attr++ ) {
-			// declare attribute catalog entry
-			std::array<Attribute, RELCAT_NO_ATTRS> attrCatRecord;
-			attrCatBuffer.getRecord( attrCatRecord.data( ), attr );
+		do {
+			RecBuffer* attrCatBuffer = new RecBuffer(attrCatBlockNum);
+			attrCatBuffer->getHeader( &attrCatHeader );
 
-			if ( std::strcmp(
-					 attrCatRecord[ ATTRCAT_REL_NAME_INDEX ].sVal, relCatRecord[ RELCAT_REL_NAME_INDEX ].sVal ) == 0 ) {
-				const char* atype = attrCatRecord[ ATTRCAT_ATTR_TYPE_INDEX ].nVal == NUMBER ? "NUM" : "STR";
-				std::cout << "  " << attrCatRecord[ ATTRCAT_ATTR_NAME_INDEX ].sVal << ':' << atype << '\n';
+			for ( int attr = 0; attr < attrCatHeader.numEntries; attr++ ) {
+				// declare attribute catalog entry
+				std::array<Attribute, RELCAT_NO_ATTRS> attrCatRecord;
+				attrCatBuffer->getRecord( attrCatRecord.data( ), attr );
+
+				if ( std::strcmp( attrCatRecord[ ATTRCAT_REL_NAME_INDEX ].sVal,
+						 relCatRecord[ RELCAT_REL_NAME_INDEX ].sVal ) == 0 ) {
+					const char* atype = attrCatRecord[ ATTRCAT_ATTR_TYPE_INDEX ].nVal == NUMBER ? "NUM" : "STR";
+					std::cout << "  " << attrCatRecord[ ATTRCAT_ATTR_NAME_INDEX ].sVal << ':' << atype << '\n';
+				}
 			}
-		}
+			delete attrCatBuffer;
+			attrCatBlockNum = attrCatHeader.rblock;
+		} while ( attrCatBlockNum != -1);
 	}
 	// StaticBuffer buffer;
 	std::cout << '\n';
