@@ -1,8 +1,11 @@
-#pragma once
+#ifndef NITCBASE_BLOCKBUFFER_H
+#define NITCBASE_BLOCKBUFFER_H
+
 #include "../Disk_Class/Disk.h"
 #include "../define/constants.h"
 #include "StaticBuffer.h"
 #include <cstdint>
+#include <memory>
 
 struct HeadInfo {
 	int32_t blockType;
@@ -88,3 +91,5 @@ class IndLeaf : public IndBuffer {
 	int getEntry( void* ptr, int indexNum );
 	int setEntry( void* ptr, int indexNum );
 };
+
+#endif

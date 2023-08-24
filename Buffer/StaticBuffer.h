@@ -3,6 +3,8 @@
 
 #include "../Disk_Class/Disk.h"
 #include "../define/constants.h"
+#include <array>
+#include <memory>
 
 struct BufferMetaInfo {
 	bool free;
@@ -16,7 +18,7 @@ class StaticBuffer {
 
   private:
 	// fields
-	static unsigned char blocks[ BUFFER_CAPACITY ][ BLOCK_SIZE ];
+	static std::array<std::array<unsigned char, BLOCK_SIZE>, BUFFER_CAPACITY> blocks;
 	static struct BufferMetaInfo metainfo[ BUFFER_CAPACITY ];
 	static unsigned char blockAllocMap[ DISK_BLOCKS ];
 

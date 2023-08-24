@@ -1,5 +1,6 @@
 #include "BlockBuffer.h"
 #include "../define/constants.h"
+#include <algorithm>
 #include <array>
 #include <cstdlib>
 #include <cstring>
@@ -10,14 +11,21 @@ BlockBuffer::BlockBuffer( int num ) : blockNum( num ) {}
 RecBuffer::RecBuffer( int num ) : BlockBuffer::BlockBuffer( num ) {}
 
 int BlockBuffer::getHeader( struct HeadInfo* head ) {
-	std::array<unsigned char, BLOCK_SIZE> buffer;
+	unsigned char* buffer;
+	int ret = this->loadBlockAndGetBufferPtr( &buffer );
+	if ( ret != SUCCESS )
+		return ret;
 
-	Disk::readBlock( buffer.data( ), blockNum );
-	std::copy( buffer.begin( ), buffer.begin( ) + sizeof( HeadInfo ), reinterpret_cast<unsigned char*>( head ) );
+	Disk::readBlock( buffer, blockNum );
+	std::copy( buffer, buffer + sizeof( HeadInfo ), reinterpret_cast<unsigned char*>( head ) );
 
 	return SUCCESS;
 }
 
+/*
+ * @param rec
+ * @param slotNum
+ */
 int RecBuffer::getRecord( union Attribute* rec, int slotNum ) {
 	struct HeadInfo* head = new HeadInfo;
 	this->getHeader( head );
@@ -25,8 +33,12 @@ int RecBuffer::getRecord( union Attribute* rec, int slotNum ) {
 	int slotCount = head->numSlots;
 
 	// read the block at this.blockNum into a buffer
-	std::array<unsigned char, BLOCK_SIZE> buffer;
-	Disk::readBlock( buffer.data( ), blockNum );
+	unsigned char* buffer;
+	int ret = this->loadBlockAndGetBufferPtr( &buffer );
+	if ( ret != SUCCESS )
+		return ret;
+
+	Disk::readBlock( buffer, blockNum );
 
 	/* record at slotNum will be at offset HEADER_SIZE + slotMapSize + (recordSize
 	   * slotNum)
@@ -34,9 +46,26 @@ int RecBuffer::getRecord( union Attribute* rec, int slotNum ) {
 	   - slotMap will be of size slotCount
 	   */
 	int recordSize			   = attrCount * ATTR_SIZE;
-	unsigned char* slotPointer = buffer.begin( ) + HEADER_SIZE + SLOTMAPSIZE( attrCount ) + recordSize * slotNum;
+	unsigned char* slotPointer = buffer + ( size_t )HEADER_SIZE + SLOTMAPSIZE( attrCount ) + recordSize * slotNum;
 
 	// load the record into the rec data structure
 	std::copy( slotPointer, slotPointer + recordSize, reinterpret_cast<unsigned char*>( rec ) );
+	return SUCCESS;
+}
+
+int BlockBuffer::loadBlockAndGetBufferPtr( unsigned char** buffer ) {
+	int bufferNum = StaticBuffer::getBufferNum( this->blockNum );
+
+	if ( bufferNum == E_BLOCKNOTINBUFFER ) {
+		bufferNum = StaticBuffer::getFreeBuffer( this->blockNum );
+		if ( bufferNum == E_OUTOFBOUND ) {
+			return E_OUTOFBOUND;
+		}
+		Disk::readBlock( StaticBuffer::blocks[ bufferNum ].data( ), this->blockNum );
+	}
+
+	// store the pointer to this buffer (blocks[bufferNum]) in *buffPtr
+	*buffer = StaticBuffer::blocks[ bufferNum ].data( );
+
 	return SUCCESS;
 }

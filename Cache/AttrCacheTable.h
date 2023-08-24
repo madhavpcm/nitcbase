@@ -4,6 +4,9 @@
 #include "../Buffer/BlockBuffer.h"
 #include "../define/constants.h"
 #include "../define/id.h"
+#include <cstring>
+#include <string>
+#include <list>
 
 typedef struct AttrCatEntry {
 	char relName[ ATTR_SIZE ];
@@ -17,6 +20,13 @@ typedef struct AttrCatEntry {
 			return "NUM";
 		else
 			return "STR";
+	}
+	AttrCatEntry() {
+		std::strcpy(relName, "");
+		std::strcpy(attrName, "");
+		attrType=-1;
+		primaryFlag =0;
+		rootBlock = -1;
 	}
 
 } AttrCatEntry;
@@ -35,10 +45,10 @@ class AttrCacheTable {
 
   public:
 	// methods
-	static int getAttrCatEntry( int relId, char attrName[ ATTR_SIZE ], AttrCatEntry* attrCatBuf );
-	static int getAttrCatEntry( int relId, int attrOffset, AttrCatEntry* attrCatBuf );
-	static int setAttrCatEntry( int relId, char attrName[ ATTR_SIZE ], AttrCatEntry* attrCatBuf );
-	static int setAttrCatEntry( int relId, int attrOffset, AttrCatEntry* attrCatBuf );
+	static int getAttrCatEntry( int relId, char attrName[ ATTR_SIZE ], std::unique_ptr<AttrCatEntry>& attrCatBuf );
+	static int getAttrCatEntry( int relId, int attrOffset, std::unique_ptr<AttrCatEntry>& attrCatBuf );
+	static int setAttrCatEntry( int relId, char attrName[ ATTR_SIZE ], std::unique_ptr<AttrCatEntry>& attrCatBuf );
+	static int setAttrCatEntry( int relId, int attrOffset, std::unique_ptr<AttrCatEntry>& attrCatBuf );
 	static int getSearchIndex( int relId, char attrName[ ATTR_SIZE ], IndexId* searchIndex );
 	static int getSearchIndex( int relId, int attrOffset, IndexId* searchIndex );
 	static int setSearchIndex( int relId, char attrName[ ATTR_SIZE ], IndexId* searchIndex );
@@ -48,11 +58,12 @@ class AttrCacheTable {
 
   private:
 	// field
-	static AttrCacheEntry* attrCache[ MAX_OPEN ];
+	// static AttrCacheEntry* attrCache[ MAX_OPEN ];
+	static std::list<AttrCacheEntry> attrCache[ MAX_OPEN];
 
 	// methods
-	static void recordToAttrCatEntry( union Attribute record[ ATTRCAT_NO_ATTRS ], AttrCatEntry* attrCatEntry );
-	static void attrCatEntryToRecord( AttrCatEntry* attrCatEntry, union Attribute record[ ATTRCAT_NO_ATTRS ] );
+	static void recordToAttrCatEntry( union Attribute record[ ATTRCAT_NO_ATTRS ], std::unique_ptr<AttrCatEntry>& attrCatEntry );
+	static void attrCatEntryToRecord( std::unique_ptr<AttrCatEntry>& attrCatEntry, union Attribute record[ ATTRCAT_NO_ATTRS ] );
 };
 
 #endif // NITCBASE_ATTRCACHETABLE_H

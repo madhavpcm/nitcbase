@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
+set(cmake_c_link_executable ${cmake_cxx_link_executable})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
 project(nitcbase LANGUAGES CXX)
 
@@ -22,7 +23,8 @@ target_link_libraries(
   Algebra
   BlockAccess
   BPlusTree
-  Buffer
+  StaticBuffer
+  BlockBuffer 
   Cache
   Disk_Class
   Frontend
