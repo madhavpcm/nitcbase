@@ -23,7 +23,7 @@ typedef union Attribute {
 	char sVal[ ATTR_SIZE ];
 } Attribute;
 
-int compareAttrs( Attribute attr1, Attribute attr2, int attrType );
+int compareAttrs( Attribute* attr1, Attribute* attr2, int attrType );
 
 struct InternalEntry {
 	int32_t lChild;

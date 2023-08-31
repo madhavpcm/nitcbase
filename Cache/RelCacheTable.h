@@ -28,7 +28,7 @@ class RelCacheTable {
 
   public:
 	// methods
-	static int getRelCatEntry( int relId, std::unique_ptr<RelCatEntry>& relCatBuf);
+	static int getRelCatEntry( int relId, RelCatEntry* relCatBuf);
 	static int setRelCatEntry( int relId, RelCatEntry* relCatBuf );
 	static int getSearchIndex( int relId, RecId* searchIndex );
 	static int setSearchIndex( int relId, RecId* searchIndex );

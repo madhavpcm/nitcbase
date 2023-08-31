@@ -69,7 +69,7 @@ OpenRelTable::OpenRelTable( ) {
 		attrCatBlock.getRecord( attrCatRecord.data( ), i );
 		AttrCacheEntry attrListEntry;
 		std::unique_ptr<AttrCatEntry> attrData = std::make_unique<AttrCatEntry>( );
-		AttrCacheTable::recordToAttrCatEntry( attrCatRecord.data( ), attrData );
+		AttrCacheTable::recordToAttrCatEntry( attrCatRecord.data( ), attrData.get( ) );
 
 		if ( std::strcmp( attrCatRecord[ ATTRCAT_REL_NAME_INDEX ].sVal, "RELATIONCAT" ) == 0 ) {
 			attrListEntry.attrCatEntry = *attrData;
@@ -94,6 +94,16 @@ OpenRelTable::OpenRelTable( ) {
 	// read slots 6-11 from attrCatBlock and initialise recId appropriately
 
 	// set the value at AttrCacheTable::attrCache[ATTRCAT_RELID]
+}
+
+int OpenRelTable::getRelId( char relName[ ATTR_SIZE ] ) {
+	if ( std::strcmp( relName, "RELATIONCAT" ) == 0 )
+		return RELCAT_RELID;
+
+	if ( std::strcmp( relName, "ATTRIBUTECAT" ) == 0 )
+		return ATTRCAT_RELID;
+
+	return E_RELNOTOPEN;
 }
 
 OpenRelTable::~OpenRelTable( ) {
