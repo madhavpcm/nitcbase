@@ -77,8 +77,9 @@ RecId BlockAccess::linearSearch( int relId, char attrName[ ATTR_SIZE ], union At
 		// if slot is free skip the loop
 		// (i.e. check if slot'th entry in slot map of block contains
 		// SLOT_UNOCCUPIED)
-		while ( blkSlotMap.get( )[ slot ] == SLOT_UNOCCUPIED ) {
+		if ( blkSlotMap.get( )[ slot ] == SLOT_UNOCCUPIED ) {
 			slot++;
+			continue;
 		}
 
 		std::unique_ptr<AttrCatEntry> holder = std::make_unique<AttrCatEntry>( );

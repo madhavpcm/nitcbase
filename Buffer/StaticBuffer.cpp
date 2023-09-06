@@ -52,9 +52,9 @@ int StaticBuffer::getBufferNum( int blockNum ) {
 	if ( blockNum < 0 || blockNum > DISK_BLOCKS )
 		return E_OUTOFBOUND;
 
-	for ( int block = 0; block < BUFFER_CAPACITY; block++ ) {
-		if ( metainfo[ block ].blockNum == blockNum ) {
-			return block;
+	for ( int static_buffer_index = 0; static_buffer_index < BUFFER_CAPACITY; static_buffer_index++ ) {
+		if ( !metainfo[static_buffer_index].free && metainfo[ static_buffer_index ].blockNum == blockNum ) {
+			return static_buffer_index;
 		}
 	}
 
