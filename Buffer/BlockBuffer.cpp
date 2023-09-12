@@ -57,12 +57,20 @@ int RecBuffer::getRecord( union Attribute* rec, int slotNum ) {
 int BlockBuffer::loadBlockAndGetBufferPtr( unsigned char** buffer ) {
 	int bufferNum = StaticBuffer::getBufferNum( this->blockNum );
 
-	if ( bufferNum == E_BLOCKNOTINBUFFER ) {
-		bufferNum = StaticBuffer::getFreeBuffer( this->blockNum );
-		if ( bufferNum == E_OUTOFBOUND ) {
-			return E_OUTOFBOUND;
+	if ( bufferNum != E_BLOCKNOTINBUFFER ) {
+		for ( int bufferIndex = 0; bufferIndex < BUFFER_CAPACITY; bufferIndex++ ) {
+			if ( StaticBuffer::metainfo[ bufferIndex ].free == false ) {
+				StaticBuffer::metainfo[ bufferIndex ].timeStamp++;
+			}
 		}
-		Disk::readBlock( StaticBuffer::blocks[ bufferNum ].data( ), this->blockNum );
+		StaticBuffer::metainfo[ bufferNum ].timeStamp = 0;
+	} else {
+		int freeBuffer = StaticBuffer::getFreeBuffer( this->blockNum );
+
+		if ( freeBuffer == E_OUTOFBOUND )
+			return E_OUTOFBOUND;
+
+		Disk::readBlock( StaticBuffer::blocks[ freeBuffer ].data( ), this->blockNum );
 	}
 
 	// store the pointer to this buffer (blocks[bufferNum]) in *buffPtr
@@ -112,4 +120,30 @@ int compareAttrs( Attribute* attr1, Attribute* attr2, int attrType ) {
 	if ( diff < 0 )
 		return -1;
 	return 0;
+}
+
+int RecBuffer::setRecord( union Attribute* rec, int slotNum ) {
+	uint8_t* bufferPtr;
+	/* get the starting address of the buffer containing the block
+	   using loadBlockAndGetBufferPtr(&bufferPtr). */
+	auto res = loadBlockAndGetBufferPtr( &bufferPtr );
+	if ( res != SUCCESS )
+		return res;
+
+	HeadInfo headerInfo;
+	getHeader( &headerInfo );
+
+	size_t numAttributes = headerInfo.numAttrs;
+	size_t numSlots		 = headerInfo.numSlots;
+
+	if ( slotNum < 0 || slotNum >= numSlots )
+		return E_OUTOFBOUND;
+
+	uint8_t* offsetPtr = bufferPtr + HEADER_SIZE + SLOTMAPSIZE( numAttributes ) +
+						 slotNum * ( numAttributes * sizeof( union Attribute ) );
+	std::copy( rec, rec + 1, offsetPtr );
+
+	StaticBuffer::setDirtyBit( this->blockNum );
+
+	return SUCCESS;
 }

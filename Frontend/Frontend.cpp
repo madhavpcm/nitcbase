@@ -15,23 +15,21 @@ int Frontend::drop_table( char relname[ ATTR_SIZE ] ) {
 
 int Frontend::open_table( char relname[ ATTR_SIZE ] ) {
 	// Schema::openRel
-	return Schema::openRel(relname);
+	return Schema::openRel( relname );
 }
 
 int Frontend::close_table( char relname[ ATTR_SIZE ] ) {
 	// Schema::closeRel
-	return Schema::closeRel(relname);
+	return Schema::closeRel( relname );
 }
 
 int Frontend::alter_table_rename( char relname_from[ ATTR_SIZE ], char relname_to[ ATTR_SIZE ] ) {
-	// Schema::renameRel
-	return SUCCESS;
+	return Schema::renameRel( relname_from, relname_to );
 }
 
 int Frontend::alter_table_rename_column(
 	char relname[ ATTR_SIZE ], char attrname_from[ ATTR_SIZE ], char attrname_to[ ATTR_SIZE ] ) {
-	// Schema::renameAttr
-	return SUCCESS;
+	return Schema::renameAttr( relname, attrname_from, attrname_to );
 }
 
 int Frontend::create_index( char relname[ ATTR_SIZE ], char attrname[ ATTR_SIZE ] ) {
@@ -51,7 +49,8 @@ int Frontend::insert_into_table_values( char relname[ ATTR_SIZE ], int attr_coun
 
 int Frontend::select_from_table( char relname_source[ ATTR_SIZE ], char relname_target[ ATTR_SIZE ] ) {
 	// Algebra::project
-	//return Algebra::select( relname_source, relname_target, attribute, op, value );
+	// return Algebra::select( relname_source, relname_target, attribute, op,
+	// value );
 	return SUCCESS;
 }
 

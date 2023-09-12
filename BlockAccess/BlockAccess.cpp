@@ -130,3 +130,114 @@ RecId BlockAccess::linearSearch( int relId, char attrName[ ATTR_SIZE ], union At
 	// no record in the relation with Id relid satisfies the given condition
 	return RecId{ -1, -1 };
 }
+static int renameRelation( char* oldName, char* newName ) {
+	auto relId = OpenRelTable::getRelId( oldName );
+	RelCacheTable::resetSearchIndex( relId );
+
+	union Attribute newRelationName;
+	std::strcpy( newRelationName.sVal, newName );
+	char arr[ ATTR_SIZE ] = "RelName";
+
+	/*
+	 * Check if operation is valid
+	 */
+	auto newNameRelId = BlockAccess::linearSearch( RELCAT_RELID, arr, newRelationName, EQ );
+	if ( newNameRelId != RecId{ -1, -1 } ) {
+		return E_RELEXIST;
+	}
+
+	/*
+	 * Update relation catalog
+	 */
+	RelCacheTable::resetSearchIndex( RELCAT_RELID );
+	union Attribute oldRelationName;
+	std::strcpy( oldRelationName.sVal, oldName );
+
+	auto oldNameRelId = BlockAccess::linearSearch( RELCAT_RELID, arr, oldRelationName, EQ );
+	if ( oldNameRelId == RecId{ -1, -1 } ) {
+		return E_RELNOTEXIST;
+	}
+
+	RecBuffer relCatBuffer( RELCAT_BLOCK );
+	std::array<union Attribute, RELCAT_NO_ATTRS> relCatRecord;
+	relCatBuffer.getRecord( relCatRecord.data( ), oldNameRelId.slot );
+
+	std::strcpy( relCatRecord[ RELCAT_REL_NAME_INDEX ].sVal, newName );
+	relCatBuffer.setRecord( relCatRecord.data( ), oldNameRelId.slot );
+
+	/*
+	 * Update Attribute Catalog
+	 */
+	RelCacheTable::resetSearchIndex( ATTRCAT_RELID );
+
+	for ( int i = 0; i < relCatRecord[ RELCAT_NO_ATTRIBUTES_INDEX ].nVal; i++ ) {
+		std::array<union Attribute, ATTRCAT_NO_ATTRS> attrCatRecord;
+		auto attrCatEntry = BlockAccess::linearSearch( ATTRCAT_RELID, arr, oldRelationName, EQ );
+		RecBuffer attrCatBuffer( attrCatEntry.block );
+
+		attrCatBuffer.getRecord( attrCatRecord.data( ), attrCatEntry.slot );
+		std::strcpy( attrCatRecord[ ATTRCAT_REL_NAME_INDEX ].sVal, newName );
+		attrCatBuffer.setRecord( attrCatRecord.data( ), attrCatEntry.slot );
+	}
+
+	return SUCCESS;
+}
+
+int BlockAccess::renameAttribute( char relName[ ATTR_SIZE ], char oldName[ ATTR_SIZE ], char newName[ ATTR_SIZE ] ) {
+
+	/* reset the searchIndex of the relation catalog using
+	   RelCacheTable::resetSearchIndex() */
+	RelCacheTable::resetSearchIndex( RELCAT_RELID );
+
+	union Attribute relationName;
+	std::strcpy( relationName.sVal, relName );
+	char arr[ ATTR_SIZE ]  = "RelName";
+	char arr2[ ATTR_SIZE ] = "RelName";
+
+	auto oldNameRelId = BlockAccess::linearSearch( RELCAT_RELID, arr, relationName, EQ );
+	if ( oldNameRelId == RecId{ -1, -1 } ) {
+		return E_RELNOTEXIST;
+	}
+
+	RelCacheTable::resetSearchIndex( ATTRCAT_RELID );
+
+	/* declare variable attrToRenameRecId used to store the attr-cat recId
+	of the attribute to rename */
+	RecId attrToRenameRecId{ -1, -1 };
+	std::array<Attribute, ATTRCAT_NO_ATTRS> attrCatEntryRecord;
+
+	/* iterate over all Attribute Catalog Entry record corresponding to the
+	   relation to find the required attribute */
+	RecId targetAttr{ -1, -1 };
+	while ( true ) {
+		// linear search on the attribute catalog for RelName = relNameAttr
+		auto res = BlockAccess::linearSearch( ATTRCAT_RELID, arr, relationName, EQ );
+
+		// End of search
+		if ( res == RecId{ -1, -1 } ) {
+			break;
+		}
+
+		RecBuffer attrCatBuffer( res.block );
+		attrCatBuffer.getRecord( attrCatEntryRecord.data( ), res.slot );
+
+		// if this is the attribute we want to change
+		if ( std::strcmp( attrCatEntryRecord[ ATTRCAT_ATTR_NAME_INDEX ].sVal, oldName ) == 0 )
+			targetAttr = res;
+
+		// if this attribute name already exists
+		if ( std::strcmp( attrCatEntryRecord[ ATTRCAT_ATTR_NAME_INDEX ].sVal, newName ) == 0 )
+			return E_ATTREXIST;
+	}
+
+	if ( targetAttr == RecId{ -1, -1 } )
+		return E_ATTRNOTEXIST;
+
+	RecBuffer targetBuffer( targetAttr.block );
+
+	targetBuffer.getRecord( attrCatEntryRecord.data( ), targetAttr.slot );
+	std::strcpy( attrCatEntryRecord[ ATTRCAT_ATTR_NAME_INDEX ].sVal, newName );
+	targetBuffer.setRecord( attrCatEntryRecord.data( ), targetAttr.slot );
+
+	return SUCCESS;
+}
