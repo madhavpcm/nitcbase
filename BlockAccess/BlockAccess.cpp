@@ -130,7 +130,7 @@ RecId BlockAccess::linearSearch( int relId, char attrName[ ATTR_SIZE ], union At
 	// no record in the relation with Id relid satisfies the given condition
 	return RecId{ -1, -1 };
 }
-static int renameRelation( char* oldName, char* newName ) {
+int BlockAccess::renameRelation( char* oldName, char* newName ) {
 	auto relId = OpenRelTable::getRelId( oldName );
 	RelCacheTable::resetSearchIndex( relId );
 
@@ -170,8 +170,8 @@ static int renameRelation( char* oldName, char* newName ) {
 	 */
 	RelCacheTable::resetSearchIndex( ATTRCAT_RELID );
 
+	std::array<union Attribute, ATTRCAT_NO_ATTRS> attrCatRecord;
 	for ( int i = 0; i < relCatRecord[ RELCAT_NO_ATTRIBUTES_INDEX ].nVal; i++ ) {
-		std::array<union Attribute, ATTRCAT_NO_ATTRS> attrCatRecord;
 		auto attrCatEntry = BlockAccess::linearSearch( ATTRCAT_RELID, arr, oldRelationName, EQ );
 		RecBuffer attrCatBuffer( attrCatEntry.block );
 

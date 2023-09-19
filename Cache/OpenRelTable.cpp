@@ -29,8 +29,8 @@ OpenRelTable::OpenRelTable( ) {
 	 */
 	relCatBlock.getRecord( relCatRecord.data( ), RELCAT_SLOTNUM_FOR_RELCAT );
 	RelCacheTable::recordToRelCatEntry( relCatRecord.data( ), &relCatRecordCacheEntry.relCatEntry );
-	relCatRecordCacheEntry.recId.block = RELCAT_BLOCK;
-	relCatRecordCacheEntry.recId.slot  = RELCAT_SLOTNUM_FOR_RELCAT;
+	relCatRecordCacheEntry.recId	   = RecId{ RELCAT_BLOCK, RELCAT_SLOTNUM_FOR_RELCAT};
+	relCatRecordCacheEntry.searchIndex = RecId{ -1, -1 };
 
 	RelCacheTable::relCache[ RELCAT_RELID ]		 = new RelCacheEntry;
 	*( RelCacheTable::relCache[ RELCAT_RELID ] ) = relCatRecordCacheEntry;
@@ -41,8 +41,8 @@ OpenRelTable::OpenRelTable( ) {
 
 	relCatBlock.getRecord( relCatRecord.data( ), RELCAT_SLOTNUM_FOR_ATTRCAT );
 	RelCacheTable::recordToRelCatEntry( relCatRecord.data( ), &relCatRecordCacheEntry.relCatEntry );
-	relCatRecordCacheEntry.recId.block = RELCAT_BLOCK;
-	relCatRecordCacheEntry.recId.slot  = RELCAT_SLOTNUM_FOR_ATTRCAT;
+	relCatRecordCacheEntry.recId	   = RecId{ ATTRCAT_BLOCK, RELCAT_SLOTNUM_FOR_ATTRCAT };
+	relCatRecordCacheEntry.searchIndex = RecId{ -1, -1 };
 
 	RelCacheTable::relCache[ ATTRCAT_RELID ]	  = new RelCacheEntry;
 	*( RelCacheTable::relCache[ ATTRCAT_RELID ] ) = relCatRecordCacheEntry;
@@ -98,9 +98,9 @@ OpenRelTable::OpenRelTable( ) {
 	std::strcpy( OpenRelTable::tableMetaInfo[ RELCAT_RELID ].relName, "RELATIONCAT" );
 	OpenRelTable::tableMetaInfo[ ATTRCAT_RELID ].free = false;
 	std::strcpy( OpenRelTable::tableMetaInfo[ ATTRCAT_RELID ].relName, "ATTRIBUTECAT" );
-	
-	for(int i=2 ; i < MAX_OPEN; i++)
-		tableMetaInfo[i].free = true;
+
+	for ( int i = 2; i < MAX_OPEN; i++ )
+		tableMetaInfo[ i ].free = true;
 }
 
 int OpenRelTable::getRelId( char relName[ ATTR_SIZE ] ) {
@@ -192,7 +192,7 @@ int OpenRelTable::openRel( char relName[ ATTR_SIZE ] ) {
 	std::strcpy( attrVal.sVal, relName );
 	char pass[ ATTR_SIZE ] = "RelName";
 
-	relcatRecId = BlockAccess::linearSearch( RELCAT_RELID, pass,attrVal, EQ );
+	relcatRecId = BlockAccess::linearSearch( RELCAT_RELID, pass, attrVal, EQ );
 
 	if ( relcatRecId.slot == -1 && relcatRecId.block == -1 ) {
 		// (the relation is not found in the Relation Catalog.)
@@ -241,15 +241,15 @@ int OpenRelTable::openRel( char relName[ ATTR_SIZE ] ) {
 	std::array<union Attribute, ATTRCAT_NO_ATTRS> attrCatRecord;
 	std::list<AttrCacheEntry> attrCacheList;
 
-	RelCacheTable::resetSearchIndex( ATTRCAT_RELID);
+	RelCacheTable::resetSearchIndex( ATTRCAT_RELID );
 	RecId attrcatRecId = BlockAccess::linearSearch( ATTRCAT_RELID, pass, attrVal, EQ );
 	while ( attrcatRecId.slot != -1 && attrcatRecId.block != -1 ) {
 		RecBuffer attrBuffer( attrcatRecId.block );
-		attrBuffer.getRecord(attrCatRecord.data(), attrcatRecId.slot);
+		attrBuffer.getRecord( attrCatRecord.data( ), attrcatRecId.slot );
 		AttrCacheEntry attrListEntry;
 		AttrCacheTable::recordToAttrCatEntry( attrCatRecord.data( ), &attrListEntry.attrCatEntry );
 		attrListEntry.recId = attrcatRecId;
-		attrCacheList.push_back(  attrListEntry  );
+		attrCacheList.push_back( attrListEntry );
 		attrcatRecId = BlockAccess::linearSearch( ATTRCAT_RELID, pass, attrVal, EQ );
 	}
 

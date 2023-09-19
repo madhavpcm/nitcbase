@@ -1,6 +1,7 @@
 #include "Schema.h"
 #include <cmath>
 #include <cstring>
+#include "../BlockAccess/BlockAccess.h"
 
 int Schema::openRel( char relName[ ATTR_SIZE ] ) {
 	int ret = OpenRelTable::openRel( relName );
@@ -40,7 +41,7 @@ int Schema::renameRel( char oldRelName[ ATTR_SIZE ], char newRelName[ ATTR_SIZE 
 	if ( OpenRelTable::getRelId( oldRelName ) != E_RELNOTOPEN )
 		return E_RELOPEN;
 
-	return BlockAccess::renameRelation( oldRelName, newRelName );
+	return BlockAccess::renameRelation( (char*)oldRelName, (char*)newRelName );
 }
 
 int Schema::renameAttr( char relName[ ATTR_SIZE ], char oldAttrName[ ATTR_SIZE ], char newAttrName[ ATTR_SIZE ] ) {

@@ -17,7 +17,6 @@ int BlockBuffer::getHeader( struct HeadInfo* head ) {
 	if ( ret != SUCCESS )
 		return ret;
 
-	Disk::readBlock( buffer, blockNum );
 	std::copy( buffer, buffer + sizeof( HeadInfo ), reinterpret_cast<unsigned char*>( head ) );
 
 	return SUCCESS;
@@ -28,8 +27,8 @@ int BlockBuffer::getHeader( struct HeadInfo* head ) {
  * @param slotNum
  */
 int RecBuffer::getRecord( union Attribute* rec, int slotNum ) {
-	struct HeadInfo* head = new HeadInfo;
-	this->getHeader( head );
+	std::unique_ptr<HeadInfo> head = std::make_unique<HeadInfo>( );
+	this->getHeader( head.get( ) );
 	int attrCount = head->numAttrs;
 	int slotCount = head->numSlots;
 
@@ -39,7 +38,6 @@ int RecBuffer::getRecord( union Attribute* rec, int slotNum ) {
 	if ( ret != SUCCESS )
 		return ret;
 
-	Disk::readBlock( buffer, blockNum );
 
 	/* record at slotNum will be at offset HEADER_SIZE + slotMapSize + (recordSize
 	   * slotNum)
@@ -65,16 +63,18 @@ int BlockBuffer::loadBlockAndGetBufferPtr( unsigned char** buffer ) {
 		}
 		StaticBuffer::metainfo[ bufferNum ].timeStamp = 0;
 	} else {
+		std::cout << "Reading block " << blockNum << '\n';
 		int freeBuffer = StaticBuffer::getFreeBuffer( this->blockNum );
 
 		if ( freeBuffer == E_OUTOFBOUND )
 			return E_OUTOFBOUND;
 
 		Disk::readBlock( StaticBuffer::blocks[ freeBuffer ].data( ), this->blockNum );
+		bufferNum = freeBuffer;
 	}
+	*buffer = StaticBuffer::blocks[ bufferNum ].data( );
 
 	// store the pointer to this buffer (blocks[bufferNum]) in *buffPtr
-	*buffer = StaticBuffer::blocks[ bufferNum ].data( );
 
 	return SUCCESS;
 }
@@ -139,9 +139,11 @@ int RecBuffer::setRecord( union Attribute* rec, int slotNum ) {
 	if ( slotNum < 0 || slotNum >= numSlots )
 		return E_OUTOFBOUND;
 
-	uint8_t* offsetPtr = bufferPtr + HEADER_SIZE + SLOTMAPSIZE( numAttributes ) +
-						 slotNum * ( numAttributes * sizeof( union Attribute ) );
-	std::copy( rec, rec + 1, offsetPtr );
+	uint8_t* offsetPtr =
+		bufferPtr + ( size_t )HEADER_SIZE + numSlots + slotNum * ( numAttributes * sizeof( union Attribute ) );
+	// std::cout << std::copy( reinterpret_cast<uint8_t*>( rec ),
+	//	reinterpret_cast<uint8_t*>( rec ) + numAttributes * sizeof( union Attribute ), offsetPtr ) - offsetPtr << '\n';
+	std::memcpy( offsetPtr, rec, numAttributes * ATTR_SIZE);
 
 	StaticBuffer::setDirtyBit( this->blockNum );
 

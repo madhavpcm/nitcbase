@@ -25,7 +25,7 @@ class OpenRelTable {
   private:
 	// field
 	// static OpenRelTableMetaInfo tableMetaInfo[ MAX_OPEN ];
-	static std::array<OpenRelTableMetaInfo,MAX_OPEN> tableMetaInfo;
+	static std::array<OpenRelTableMetaInfo, MAX_OPEN> tableMetaInfo;
 
 	// method
 	static int getFreeOpenRelTableEntry( );

@@ -18,7 +18,6 @@ class StaticBuffer {
 
   private:
 	// fields
-	static std::array<std::array<unsigned char, BLOCK_SIZE>, BUFFER_CAPACITY> blocks;
 	static struct BufferMetaInfo metainfo[ BUFFER_CAPACITY ];
 	static unsigned char blockAllocMap[ DISK_BLOCKS ];
 
@@ -27,6 +26,7 @@ class StaticBuffer {
 	static int getBufferNum( int blockNum );
 
   public:
+	static std::array<std::array<unsigned char, BLOCK_SIZE>, BUFFER_CAPACITY> blocks;
 	// methods
 	static int getStaticBlockType( int blockNum );
 	static int setDirtyBit( int blockNum );

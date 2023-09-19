@@ -18,7 +18,7 @@ StaticBuffer::StaticBuffer( ) {
 
 StaticBuffer::~StaticBuffer( ) {
 	for ( int bufferIndex = 0; bufferIndex < BUFFER_CAPACITY; bufferIndex++ ) {
-		if ( this->metainfo[ bufferIndex ].free == false && this->metainfo[ bufferIndex ].dirty == true ) {
+		if ( this->metainfo[ bufferIndex ].dirty == true ) {
 			Disk::writeBlock( blocks[ bufferIndex ].data( ), this->metainfo[ bufferIndex ].blockNum );
 		}
 	}
