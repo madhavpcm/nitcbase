@@ -3,9 +3,13 @@
 
 std::array<std::array<unsigned char, BLOCK_SIZE>, BUFFER_CAPACITY> StaticBuffer::blocks;
 struct BufferMetaInfo StaticBuffer::metainfo[ BUFFER_CAPACITY ];
-unsigned char StaticBuffer::blockAllocMap[ DISK_BLOCKS ];
+std::array<unsigned char, DISK_BLOCKS> StaticBuffer::blockAllocMap;
 
 StaticBuffer::StaticBuffer( ) {
+	Disk::readBlock( blockAllocMap.data( ), 0 );
+	Disk::readBlock( blockAllocMap.data( ) + 1 * BLOCK_SIZE, 1 );
+	Disk::readBlock( blockAllocMap.data( ) + 2 * BLOCK_SIZE, 2 );
+	Disk::readBlock( blockAllocMap.data( ) + 3 * BLOCK_SIZE, 3 );
 
 	// initialise all blocks as free
 	for ( int bufferIndex = 0; bufferIndex < BUFFER_CAPACITY; bufferIndex++ ) {
@@ -17,6 +21,11 @@ StaticBuffer::StaticBuffer( ) {
 }
 
 StaticBuffer::~StaticBuffer( ) {
+	Disk::writeBlock( blockAllocMap.data( ), 0 );
+	Disk::writeBlock( blockAllocMap.data( ) + 1 * BLOCK_SIZE, 1 );
+	Disk::writeBlock( blockAllocMap.data( ) + 2 * BLOCK_SIZE, 2 );
+	Disk::writeBlock( blockAllocMap.data( ) + 3 * BLOCK_SIZE, 3 );
+
 	for ( int bufferIndex = 0; bufferIndex < BUFFER_CAPACITY; bufferIndex++ ) {
 		if ( this->metainfo[ bufferIndex ].dirty == true ) {
 			Disk::writeBlock( blocks[ bufferIndex ].data( ), this->metainfo[ bufferIndex ].blockNum );

@@ -19,14 +19,14 @@ class StaticBuffer {
   private:
 	// fields
 	static struct BufferMetaInfo metainfo[ BUFFER_CAPACITY ];
-	static unsigned char blockAllocMap[ DISK_BLOCKS ];
+	static std::array<unsigned char, DISK_BLOCKS> blockAllocMap;
+	static std::array<std::array<unsigned char, BLOCK_SIZE>, BUFFER_CAPACITY> blocks;
 
 	// methods
 	static int getFreeBuffer( int blockNum );
 	static int getBufferNum( int blockNum );
 
   public:
-	static std::array<std::array<unsigned char, BLOCK_SIZE>, BUFFER_CAPACITY> blocks;
 	// methods
 	static int getStaticBlockType( int blockNum );
 	static int setDirtyBit( int blockNum );

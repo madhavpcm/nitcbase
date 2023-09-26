@@ -1,5 +1,6 @@
-add_library( Defines 
+add_library( Defines SHARED 
 	constants.h
+	constants.cpp
 	id.h
 )
 

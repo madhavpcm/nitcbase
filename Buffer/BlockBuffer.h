@@ -49,9 +49,9 @@ class BlockBuffer {
 
   public:
 	// methods
-	BlockBuffer( char blockType );
-	BlockBuffer( int blockNum );
-	int getBlockNum( );
+	BlockBuffer( char blockType ) { this->blockNum = getFreeBlock( blockType ); };
+	BlockBuffer( int blk ) : blockNum( blk ){ };
+	int getBlockNum( ) { return this->blockNum; };
 	int getHeader( struct HeadInfo* head );
 	int setHeader( struct HeadInfo* head );
 	void releaseBlock( );
@@ -60,8 +60,8 @@ class BlockBuffer {
 class RecBuffer : public BlockBuffer {
   public:
 	// methods
-	RecBuffer( );
-	RecBuffer( int blockNum );
+	RecBuffer( ) : BlockBuffer( 'R' ){ };
+	RecBuffer( int blk ) : BlockBuffer( blk ){ };
 	int getSlotMap( unsigned char* slotMap );
 	int setSlotMap( unsigned char* slotMap );
 	int getRecord( union Attribute* rec, int slotNum );

@@ -113,4 +113,68 @@ int Algebra::select(
 	return SUCCESS;
 }
 
+int Algebra::insert( char relName[ ATTR_SIZE ], int nAttrs, char record[][ ATTR_SIZE ] ) {
+	// if relName is equal to "RELATIONCAT" or "ATTRIBUTECAT"
+	// return E_NOTPERMITTED;
+
+	if ( std::strcmp( relName, ATTRCAT_RELNAME ) == 0 || std::strcmp( relName, RELCAT_RELNAME ) == 0 ) {
+		return E_NOTPERMITTED;
+	}
+	// get the relation's rel-id using OpenRelTable::getRelId() method
+	int relId = OpenRelTable::getRelId( relName );
+
+	// if relation is not open in open relation table, return E_RELNOTOPEN
+	// (check if the value returned from getRelId function call = E_RELNOTOPEN)
+	if ( relId == E_RELNOTOPEN )
+		return E_RELNOTOPEN;
+
+	// get the relation catalog entry from relation cache
+	// (use RelCacheTable::getRelCatEntry() of Cache Layer)
+	RelCatEntry relCatEntry;
+	assert_res(RelCacheTable::getRelCatEntry( relId, &relCatEntry ), SUCCESS);
+
+	/* if relCatEntry.numAttrs != numberOfAttributes in relation,
+	   return E_NATTRMISMATCH */
+	if ( relCatEntry.numAttrs != nAttrs ) {
+		return E_NATTRMISMATCH;
+	}
+
+	// let recordValues[numberOfAttributes] be an array of type union Attribute
+	std::vector<union Attribute> recordValues( nAttrs );
+
+	/*
+	 */
+	// iterate through 0 to nAttrs-1: (let i be the iterator)
+	for ( int i = 0; i < nAttrs; i++ ) {
+		// get the attr-cat entry for the i'th attribute from the attr-cache
+		// (use AttrCacheTable::getAttrCatEntry())
+		AttrCatEntry attrCatEntry;
+		assert_res(AttrCacheTable::getAttrCatEntry( relId, i, &attrCatEntry ),SUCCESS);
+
+		// let type = attrCatEntry.attrType;
+		auto type = attrCatEntry.attrType;
+
+		if ( type == NUMBER ) {
+			// if the char array record[i] can be converted to a number
+			// (check this using isNumber() function)
+			if ( isNumber( record[ i ] ) ) {
+				/* convert the char array to numeral and store it
+				   at recordValues[i].nVal using atof() */
+				recordValues[ i ].nVal = atof( record[ i ] );
+			} else {
+				return E_ATTRTYPEMISMATCH;
+			}
+			std::cout << recordValues[i].nVal << ' ';
+		} else if ( type == STRING ) {
+			std::strcpy( recordValues[ i ].sVal, record[ i ] );
+			std::cout << recordValues[i].sVal << ' ';
+		}
+	}
+	std::cout << '\n';
+
+	// insert the record by calling BlockAccess::insert() function
+	// let retVal denote the return value of insert call
+	int retVal = BlockAccess::insert( relId, recordValues.data( ) );
+	return retVal;
+}
 // will return if a string can be parsed as a floating point number
