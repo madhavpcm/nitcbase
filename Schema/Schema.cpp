@@ -120,6 +120,7 @@ int Schema::createRel( char relName[], int nAttrs, char attrs[][ ATTR_SIZE ], in
 	for ( int i = 0; i < nAttrs; i++ ) {
 		/* declare Attribute attrCatRecord[6] to store the attribute catalog
 		   record corresponding to i'th attribute of the argument passed*/
+		std::cout << "Inserting " << attrs[i] << " of type " << attrtype[i] << " into " << relName <<'\n';
 		std::array<union Attribute, ATTRCAT_NO_ATTRS> attrCatRecord;
 		// (where i is the iterator of the loop)
 		// fill attrCatRecord fields as given below

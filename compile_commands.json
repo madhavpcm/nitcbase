@@ -1,0 +1,80 @@
+[
+{
+  "directory": "/home/madhavpcm/Dev/NITCbase/nitcbase/build",
+  "command": "/usr/bin/c++  -I/home/madhavpcm/Dev/NITCbase/nitcbase/Algebra -I/home/madhavpcm/Dev/NITCbase/nitcbase/BlockAccess -I/home/madhavpcm/Dev/NITCbase/nitcbase/BPlusTree -I/home/madhavpcm/Dev/NITCbase/nitcbase/Buffer -I/home/madhavpcm/Dev/NITCbase/nitcbase/Cache -I/home/madhavpcm/Dev/NITCbase/nitcbase/Disk_Class -I/home/madhavpcm/Dev/NITCbase/nitcbase/Frontend -I/home/madhavpcm/Dev/NITCbase/nitcbase/FrontendInterface -I/home/madhavpcm/Dev/NITCbase/nitcbase/Schema -g -o CMakeFiles/nitcbase.dir/main.cpp.o -c /home/madhavpcm/Dev/NITCbase/nitcbase/main.cpp",
+  "file": "/home/madhavpcm/Dev/NITCbase/nitcbase/main.cpp",
+  "output": "CMakeFiles/nitcbase.dir/main.cpp.o"
+},
+{
+  "directory": "/home/madhavpcm/Dev/NITCbase/nitcbase/build/Algebra",
+  "command": "/usr/bin/c++ -DAlgebra_EXPORTS -I/home/madhavpcm/Dev/NITCbase/nitcbase/Algebra -g -fPIC -o CMakeFiles/Algebra.dir/Algebra.cpp.o -c /home/madhavpcm/Dev/NITCbase/nitcbase/Algebra/Algebra.cpp",
+  "file": "/home/madhavpcm/Dev/NITCbase/nitcbase/Algebra/Algebra.cpp",
+  "output": "Algebra/CMakeFiles/Algebra.dir/Algebra.cpp.o"
+},
+{
+  "directory": "/home/madhavpcm/Dev/NITCbase/nitcbase/build/BlockAccess",
+  "command": "/usr/bin/c++  -I/home/madhavpcm/Dev/NITCbase/nitcbase/BlockAccess -g -o CMakeFiles/BlockAccess.dir/BlockAccess.cpp.o -c /home/madhavpcm/Dev/NITCbase/nitcbase/BlockAccess/BlockAccess.cpp",
+  "file": "/home/madhavpcm/Dev/NITCbase/nitcbase/BlockAccess/BlockAccess.cpp",
+  "output": "BlockAccess/CMakeFiles/BlockAccess.dir/BlockAccess.cpp.o"
+},
+{
+  "directory": "/home/madhavpcm/Dev/NITCbase/nitcbase/build/BPlusTree",
+  "command": "/usr/bin/c++  -I/home/madhavpcm/Dev/NITCbase/nitcbase/BPlusTree -g -o CMakeFiles/BPlusTree.dir/BPlusTree.cpp.o -c /home/madhavpcm/Dev/NITCbase/nitcbase/BPlusTree/BPlusTree.cpp",
+  "file": "/home/madhavpcm/Dev/NITCbase/nitcbase/BPlusTree/BPlusTree.cpp",
+  "output": "BPlusTree/CMakeFiles/BPlusTree.dir/BPlusTree.cpp.o"
+},
+{
+  "directory": "/home/madhavpcm/Dev/NITCbase/nitcbase/build/Buffer",
+  "command": "/usr/bin/c++ -DStaticBuffer_EXPORTS -I/home/madhavpcm/Dev/NITCbase/nitcbase/Buffer -g -fPIC -o CMakeFiles/StaticBuffer.dir/StaticBuffer.cpp.o -c /home/madhavpcm/Dev/NITCbase/nitcbase/Buffer/StaticBuffer.cpp",
+  "file": "/home/madhavpcm/Dev/NITCbase/nitcbase/Buffer/StaticBuffer.cpp",
+  "output": "Buffer/CMakeFiles/StaticBuffer.dir/StaticBuffer.cpp.o"
+},
+{
+  "directory": "/home/madhavpcm/Dev/NITCbase/nitcbase/build/Buffer",
+  "command": "/usr/bin/c++ -DBlockBuffer_EXPORTS -I/home/madhavpcm/Dev/NITCbase/nitcbase/Buffer -g -fPIC -o CMakeFiles/BlockBuffer.dir/BlockBuffer.cpp.o -c /home/madhavpcm/Dev/NITCbase/nitcbase/Buffer/BlockBuffer.cpp",
+  "file": "/home/madhavpcm/Dev/NITCbase/nitcbase/Buffer/BlockBuffer.cpp",
+  "output": "Buffer/CMakeFiles/BlockBuffer.dir/BlockBuffer.cpp.o"
+},
+{
+  "directory": "/home/madhavpcm/Dev/NITCbase/nitcbase/build/Cache",
+  "command": "/usr/bin/c++ -DCache_EXPORTS -I/home/madhavpcm/Dev/NITCbase/nitcbase/Cache -g -fPIC -o CMakeFiles/Cache.dir/AttrCacheTable.cpp.o -c /home/madhavpcm/Dev/NITCbase/nitcbase/Cache/AttrCacheTable.cpp",
+  "file": "/home/madhavpcm/Dev/NITCbase/nitcbase/Cache/AttrCacheTable.cpp",
+  "output": "Cache/CMakeFiles/Cache.dir/AttrCacheTable.cpp.o"
+},
+{
+  "directory": "/home/madhavpcm/Dev/NITCbase/nitcbase/build/Cache",
+  "command": "/usr/bin/c++ -DCache_EXPORTS -I/home/madhavpcm/Dev/NITCbase/nitcbase/Cache -g -fPIC -o CMakeFiles/Cache.dir/OpenRelTable.cpp.o -c /home/madhavpcm/Dev/NITCbase/nitcbase/Cache/OpenRelTable.cpp",
+  "file": "/home/madhavpcm/Dev/NITCbase/nitcbase/Cache/OpenRelTable.cpp",
+  "output": "Cache/CMakeFiles/Cache.dir/OpenRelTable.cpp.o"
+},
+{
+  "directory": "/home/madhavpcm/Dev/NITCbase/nitcbase/build/Cache",
+  "command": "/usr/bin/c++ -DCache_EXPORTS -I/home/madhavpcm/Dev/NITCbase/nitcbase/Cache -g -fPIC -o CMakeFiles/Cache.dir/RelCacheTable.cpp.o -c /home/madhavpcm/Dev/NITCbase/nitcbase/Cache/RelCacheTable.cpp",
+  "file": "/home/madhavpcm/Dev/NITCbase/nitcbase/Cache/RelCacheTable.cpp",
+  "output": "Cache/CMakeFiles/Cache.dir/RelCacheTable.cpp.o"
+},
+{
+  "directory": "/home/madhavpcm/Dev/NITCbase/nitcbase/build/Disk_Class",
+  "command": "/usr/bin/c++  -I/home/madhavpcm/Dev/NITCbase/nitcbase/Disk_Class -g -o CMakeFiles/Disk_Class.dir/Disk.cpp.o -c /home/madhavpcm/Dev/NITCbase/nitcbase/Disk_Class/Disk.cpp",
+  "file": "/home/madhavpcm/Dev/NITCbase/nitcbase/Disk_Class/Disk.cpp",
+  "output": "Disk_Class/CMakeFiles/Disk_Class.dir/Disk.cpp.o"
+},
+{
+  "directory": "/home/madhavpcm/Dev/NITCbase/nitcbase/build/Frontend",
+  "command": "/usr/bin/c++  -I/home/madhavpcm/Dev/NITCbase/nitcbase/Frontend -g -o CMakeFiles/Frontend.dir/Frontend.cpp.o -c /home/madhavpcm/Dev/NITCbase/nitcbase/Frontend/Frontend.cpp",
+  "file": "/home/madhavpcm/Dev/NITCbase/nitcbase/Frontend/Frontend.cpp",
+  "output": "Frontend/CMakeFiles/Frontend.dir/Frontend.cpp.o"
+},
+{
+  "directory": "/home/madhavpcm/Dev/NITCbase/nitcbase/build/FrontendInterface",
+  "command": "/usr/bin/c++  -I/home/madhavpcm/Dev/NITCbase/nitcbase/FrontendInterface -I/home/madhavpcm/Dev/NITCbase/nitcbase/Frontend -g -o CMakeFiles/FrontendInterface.dir/FrontendInterface.cpp.o -c /home/madhavpcm/Dev/NITCbase/nitcbase/FrontendInterface/FrontendInterface.cpp",
+  "file": "/home/madhavpcm/Dev/NITCbase/nitcbase/FrontendInterface/FrontendInterface.cpp",
+  "output": "FrontendInterface/CMakeFiles/FrontendInterface.dir/FrontendInterface.cpp.o"
+},
+{
+  "directory": "/home/madhavpcm/Dev/NITCbase/nitcbase/build/Schema",
+  "command": "/usr/bin/c++  -I/home/madhavpcm/Dev/NITCbase/nitcbase/Schema -g -o CMakeFiles/Schema.dir/Schema.cpp.o -c /home/madhavpcm/Dev/NITCbase/nitcbase/Schema/Schema.cpp",
+  "file": "/home/madhavpcm/Dev/NITCbase/nitcbase/Schema/Schema.cpp",
+  "output": "Schema/CMakeFiles/Schema.dir/Schema.cpp.o"
+}
+]

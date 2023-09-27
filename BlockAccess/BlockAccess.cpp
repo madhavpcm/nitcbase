@@ -452,8 +452,8 @@ int BlockAccess::deleteRelation( char relName[ ATTR_SIZE ] ) {
 	std::array<Attribute, RELCAT_NO_ATTRS> relCatEntryRecord;
 	/* store the relation catalog record corresponding to the relation in
 	   relCatEntryRecord using RecBuffer.getRecord */
-	RecBuffer recBuffer( recId.block );
-	assert_res( recBuffer.getRecord( relCatEntryRecord.data( ), recId.slot ), SUCCESS );
+	RecBuffer relCatBuffer( recId.block );
+	assert_res( relCatBuffer.getRecord( relCatEntryRecord.data( ), recId.slot ), SUCCESS );
 
 	/* get the first record block of the relation (firstBlock) using the
 	   relation catalog entry record */
@@ -588,7 +588,6 @@ int BlockAccess::deleteRelation( char relName[ ATTR_SIZE ] ) {
 
 	/*** Delete the entry corresponding to the relation from relation catalog ***/
 	// Fetch the header of Relcat block
-	RecBuffer relCatBuffer( RELCAT_BLOCK );
 	HeadInfo relCatHeader;
 
 	/* Decrement the numEntries in the header of the block corresponding to
