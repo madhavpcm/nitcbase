@@ -106,7 +106,7 @@ int Schema::createRel( char relName[], int nAttrs, char attrs[][ ATTR_SIZE ], in
 	relCatRecord[ RELCAT_LAST_BLOCK_INDEX ].nVal = -1;
 	// offset RELCAT_NO_SLOTS_PER_BLOCK_INDEX: floor((2016 / (16 * nAttrs + 1)))
 	// (number of slots is calculated as specified in the physical layer docs)
-	relCatRecord[ RELCAT_NO_SLOTS_PER_BLOCK_INDEX ].nVal =  floor ((2016 / 16 * nAttrs + 1));
+	relCatRecord[ RELCAT_NO_SLOTS_PER_BLOCK_INDEX ].nVal =  floor ((2016 / (16 * nAttrs + 1)));
 
 	// retVal = BlockAccess::insert(RELCAT_RELID(=0), relCatRecord);
 	auto retVal = BlockAccess::insert( RELCAT_RELID, relCatRecord.data( ) );
