@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 
 set(cmake_c_link_executable ${cmake_cxx_link_executable})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 17)
 
 project(nitcbase LANGUAGES CXX)
 

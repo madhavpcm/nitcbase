@@ -22,10 +22,10 @@ int BlockBuffer::getHeader( struct HeadInfo* head ) {
  * @param slotNum
  */
 int RecBuffer::getRecord( union Attribute* rec, int slotNum ) {
-	std::unique_ptr<HeadInfo> head = std::make_unique<HeadInfo>( );
-	this->getHeader( head.get( ) );
-	int attrCount = head->numAttrs;
-	int slotCount = head->numSlots;
+	HeadInfo head;
+	this->getHeader( &head );
+	int attrCount = head.numAttrs;
+	int slotCount = head.numSlots;
 
 	// read the block at this.blockNum into a buffer
 	unsigned char* buffer;
@@ -63,7 +63,7 @@ int BlockBuffer::loadBlockAndGetBufferPtr( unsigned char** buffer ) {
 		if ( freeBuffer == E_OUTOFBOUND )
 			return E_OUTOFBOUND;
 
-		assert_res(Disk::readBlock( StaticBuffer::blocks[ freeBuffer ].data( ), this->blockNum ), SUCCESS);
+		assert_res( Disk::readBlock( StaticBuffer::blocks[ freeBuffer ].data( ), this->blockNum ), SUCCESS );
 		bufferNum = freeBuffer;
 	}
 	*buffer = StaticBuffer::blocks[ bufferNum ].data( );
@@ -280,4 +280,15 @@ int RecBuffer::setSlotMap( unsigned char* slotMap ) {
 	StaticBuffer::setDirtyBit( this->blockNum );
 
 	return SUCCESS;
+}
+
+void BlockBuffer::releaseBlock( ) {
+	if ( this->blockNum != INVALID_BLOCKNUM ) {
+		auto buff = StaticBuffer::getBufferNum( this->blockNum );
+		if ( buff != E_BLOCKNOTINBUFFER ) {
+			StaticBuffer::metainfo[ buff ].free = true;
+		}
+		StaticBuffer::blockAllocMap[ buff ] = UNUSED_BLK;
+		this->blockNum = INVALID_BLOCKNUM;
+	}
 }

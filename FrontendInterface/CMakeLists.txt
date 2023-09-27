@@ -1,5 +1,5 @@
-add_library(FrontendInterface FrontendInterface.cpp FrontendInterface.h)
-add_library(RegexHandler RegexHandler.h)
+add_library(FrontendInterface SHARED FrontendInterface.cpp FrontendInterface.h)
+add_library(RegexHandler SHARED RegexHandler.h)
 
 set_target_properties(RegexHandler PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(FrontendInterface RegexHandler Frontend readline)

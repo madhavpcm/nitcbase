@@ -395,3 +395,239 @@ int BlockAccess::insert( int relId, Attribute* record ) {
 
 	return SUCCESS;
 }
+
+/*
+NOTE: This function will copy the result of the search to the `record` argument.
+should ensure that space is allocated for `record` array based on the number of
+attributes in the relation.
+*/
+int BlockAccess::search( int relId, Attribute* record, char attrName[ ATTR_SIZE ], Attribute attrVal, int op ) {
+	// Declare a variable called recid to store the searched record
+	RecId recId;
+
+	/* search for the record id (recid) corresponding to the attribute with
+	attribute name attrName, with value attrval and satisfying the condition op
+	using linearSearch() */
+	recId = BlockAccess::linearSearch( relId, attrName, attrVal, op );
+
+	// if there's no record satisfying the given condition (recId = {-1, -1})
+	//    return E_NOTFOUND;
+	if ( recId == RecId{ -1, -1 } )
+		return E_NOTFOUND;
+
+	/* Copy the record with record id (recId) to the record buffer (record)
+	   For this Instantiate a RecBuffer class object using recId and
+	   call the appropriate method to fetch the record
+	*/
+	RecBuffer recBuffer( recId.block );
+	assert_res( recBuffer.getRecord( record, recId.slot ), SUCCESS );
+
+	return SUCCESS;
+}
+
+int BlockAccess::deleteRelation( char relName[ ATTR_SIZE ] ) {
+	// if the relation to delete is either Relation Catalog or Attribute Catalog,
+	//     return E_NOTPERMITTED
+	// (check if the relation names are either "RELATIONCAT" and "ATTRIBUTECAT".
+	// you may use the following constants: RELCAT_NAME and ATTRCAT_NAME)
+	if ( std::strcmp( relName, RELCAT_RELNAME ) == 0 || std::strcmp( relName, ATTRCAT_RELNAME ) == 0 )
+		return E_NOTPERMITTED;
+
+	/* reset the searchIndex of the relation catalog using
+	   RelCacheTable::resetSearchIndex() */
+	RelCacheTable::resetSearchIndex( RELCAT_RELID );
+
+	Attribute relNameAttr; // (stores relName as type union Attribute)
+	std::strcpy( relNameAttr.sVal, relName );
+	char relcat_relname[] = "RelName";
+
+	//  linearSearch on the relation catalog for RelName = relNameAttr
+	auto recId = BlockAccess::linearSearch( RELCAT_RELID, relcat_relname, relNameAttr, EQ );
+
+	// if the relation does not exist (linearSearch returned {-1, -1})
+	//     return E_RELNOTEXIST
+	if ( recId == RecId{ -1, -1 } )
+		return E_RELNOTEXIST;
+
+	std::array<Attribute, RELCAT_NO_ATTRS> relCatEntryRecord;
+	/* store the relation catalog record corresponding to the relation in
+	   relCatEntryRecord using RecBuffer.getRecord */
+	RecBuffer recBuffer( recId.block );
+	assert_res( recBuffer.getRecord( relCatEntryRecord.data( ), recId.slot ), SUCCESS );
+
+	/* get the first record block of the relation (firstBlock) using the
+	   relation catalog entry record */
+	int firstBlock = relCatEntryRecord[ RELCAT_FIRST_BLOCK_INDEX ].nVal;
+	/* get the number of attributes corresponding to the relation (numAttrs)
+	   using the relation catalog entry record */
+	int numAttrs = relCatEntryRecord[ RELCAT_NO_ATTRIBUTES_INDEX ].nVal;
+
+	/*
+	 Delete all the record blocks of the relation
+	*/
+	// for each record block of the relation:
+	int blk = firstBlock;
+	while ( blk != -1 ) {
+		RecBuffer currBuffer( blk );
+		HeadInfo currHeader;
+		//     get block header using BlockBuffer.getHeader
+		assert_res( currBuffer.getHeader( &currHeader ), SUCCESS );
+		//     get the next block from the header (rblock)
+		auto nextBlk = currHeader.rblock;
+		//     release the block using BlockBuffer.releaseBlock
+		currBuffer.releaseBlock( );
+		blk = nextBlk;
+	}
+
+	/***
+	 * Deleting attribute catalog entries corresponding the relation
+	 * and index blocks corresponding to the relation with relName on its
+	 *attributes
+	 ***/
+
+	// reset the searchIndex of the attribute catalog
+	RelCacheTable::resetSearchIndex( ATTRCAT_RELID );
+
+	int numberOfAttributesDeleted = 0;
+
+	while ( true ) {
+		RecId attrCatRecId;
+		// attrCatRecId = linearSearch on attribute catalog for RelName =
+		// relNameAttr
+		attrCatRecId = BlockAccess::linearSearch( ATTRCAT_RELID, relcat_relname, relNameAttr, EQ );
+
+		// if no more attributes to iterate over (attrCatRecId == {-1, -1})
+		//     break;
+		if ( attrCatRecId == RecId{ -1, -1 } )
+			break;
+
+		numberOfAttributesDeleted++;
+
+		// create a RecBuffer for attrCatRecId.block
+		RecBuffer attrBuffer( attrCatRecId.block );
+		// get the header of the block
+		HeadInfo attrHeader;
+		assert_res( attrBuffer.getHeader( &attrHeader ), SUCCESS );
+		// get the record corresponding to attrCatRecId.slot
+		std::array<union Attribute, ATTRCAT_NO_ATTRS> attrRecord;
+		assert_res( attrBuffer.getRecord( attrRecord.data( ), attrCatRecId.slot ), SUCCESS );
+
+		// declare variable rootBlock which will be used to store the root
+		// block field from the attribute catalog record.
+		int rootBlock = attrRecord[ ATTRCAT_ROOT_BLOCK_INDEX ].nVal /* get root block from the record */;
+		// (This will be used later to delete any indexes if it exists)
+
+		// Update the Slotmap for the block by setting the slot as SLOT_UNOCCUPIED
+		// Hint: use RecBuffer.getSlotMap and RecBuffer.setSlotMap
+		std::unique_ptr<unsigned char[]> attrSlotMapPtr( new unsigned char[ attrHeader.numSlots ] );
+		assert_res( attrBuffer.getSlotMap( attrSlotMapPtr.get( ) ), SUCCESS );
+		*( attrSlotMapPtr.get( ) + attrCatRecId.slot ) = SLOT_UNOCCUPIED;
+		assert_res( attrBuffer.setSlotMap( attrSlotMapPtr.get( ) ), SUCCESS );
+
+		/*
+		   Decrement the numEntries in the header of the block corresponding to
+		   the attribute catalog entry and then set back the header
+		   using RecBuffer.setHeader
+		*/
+		attrHeader.numEntries--;
+		assert_res( attrBuffer.setHeader( &attrHeader ), SUCCESS );
+
+		/* If number of entries become 0, releaseBlock is called after fixing
+		   the linked list.
+		*/
+		if ( attrHeader.numEntries == 0 ) {
+			/* Standard Linked List Delete for a Block
+			   Get the header of the left block and set it's rblock to this
+			   block's rblock
+			*/
+
+			// create a RecBuffer for lblock and call appropriate methods
+			int leftBlk = attrHeader.lblock;
+			RecBuffer leftBuffer( leftBlk );
+			HeadInfo leftHeader;
+			assert_res( leftBuffer.getHeader( &leftHeader ), SUCCESS );
+			leftHeader.rblock = attrHeader.rblock;
+			assert_res( leftBuffer.setHeader( &leftHeader ), SUCCESS );
+
+			if ( attrHeader.rblock != -1 /* header.rblock != -1 */ ) {
+				/* Get the header of the right block and set it's lblock to
+				   this block's lblock */
+				// create a RecBuffer for rblock and call appropriate methods
+				int rightBlk = attrHeader.rblock;
+				RecBuffer rightBuffer( rightBlk );
+				HeadInfo rightHeader;
+				assert_res( rightBuffer.getHeader( &rightHeader ), SUCCESS );
+				rightHeader.lblock = attrHeader.lblock;
+				assert_res( rightBuffer.setHeader( &rightHeader ), SUCCESS );
+
+			} else {
+				// (the block being released is the "Last Block" of the relation.)
+				/* update the Relation Catalog entry's LastBlock field for this
+				   relation with the block number of the previous block. */
+				RelCatEntry relCatAttrCatEntry;
+				assert_res( RelCacheTable::getRelCatEntry( ATTRCAT_RELID, &relCatAttrCatEntry ), SUCCESS );
+				relCatAttrCatEntry.lastBlk = attrHeader.lblock;
+				assert_res( RelCacheTable::setRelCatEntry( ATTRCAT_RELID, &relCatAttrCatEntry ), SUCCESS );
+			}
+
+			// (Since the attribute catalog will never be empty(why?), we do not
+			//  need to handle the case of the linked list becoming empty - i.e
+			//  every block of the attribute catalog gets released.)
+
+			// call releaseBlock()
+			attrBuffer.releaseBlock( );
+		}
+
+		// (the following part is only relevant once indexing has been implemented)
+		// if index exists for the attribute (rootBlock != -1), call bplus destroy
+		if ( rootBlock != -1 ) {
+			// delete the bplus tree rooted at rootBlock using
+			// BPlusTree::bPlusDestroy(https://www.youtube.com/watch?v=rKsTbGtygCs)
+		}
+	}
+
+	/*** Delete the entry corresponding to the relation from relation catalog ***/
+	// Fetch the header of Relcat block
+	RecBuffer relCatBuffer( RELCAT_BLOCK );
+	HeadInfo relCatHeader;
+
+	/* Decrement the numEntries in the header of the block corresponding to
+	   the relation catalog entry and set it back
+	*/
+	assert_res( relCatBuffer.getHeader( &relCatHeader ), SUCCESS );
+	relCatHeader.numEntries--;
+	assert_res( relCatBuffer.setHeader( &relCatHeader ), SUCCESS );
+
+	/* Get the slotmap in relation catalog, update it by marking the slot as
+	   free(SLOT_UNOCCUPIED) and set it back. */
+	std::unique_ptr<unsigned char[]> slotMapPtr( new unsigned char[ relCatHeader.numSlots ] );
+	assert_res( relCatBuffer.getSlotMap( slotMapPtr.get( ) ), SUCCESS );
+	*( slotMapPtr.get( ) + recId.slot ) = SLOT_UNOCCUPIED;
+	assert_res( relCatBuffer.setSlotMap( slotMapPtr.get( ) ), SUCCESS );
+
+	/*** Updating the Relation Cache Table ***/
+	/** Update relation catalog record entry (number of records in relation
+	   decreased by 1) **/
+
+	// Get the entry corresponding to relation catalog from the relation
+	// cache and update the number of records and set it back
+	// (using RelCacheTable::setRelCatEntry() function)
+	RelCatEntry relCatEntry;
+	assert_res( RelCacheTable::getRelCatEntry( RELCAT_RELID, &relCatEntry ), SUCCESS );
+	relCatEntry.numRecs--;
+	assert_res( RelCacheTable::setRelCatEntry( RELCAT_RELID, &relCatEntry ), SUCCESS );
+
+	/** Update attribute catalog entry (number of records in attribute catalog
+	   by numberOfAttributesDeleted) **/
+	// i.e., #Records = #Records - numberOfAttributesDeleted
+
+	// Get the entry corresponding to attribute catalog from the relation
+	// cache and update the number of records and set it back
+	// (using RelCacheTable::setRelCatEntry() function)
+	RelCatEntry attrCatEntry;
+	assert_res( RelCacheTable::getRelCatEntry( ATTRCAT_RELID, &attrCatEntry ), SUCCESS );
+	relCatEntry.numRecs -= numberOfAttributesDeleted;
+	assert_res( RelCacheTable::setRelCatEntry( ATTRCAT_RELID, &attrCatEntry ), SUCCESS );
+
+	return SUCCESS;
+}

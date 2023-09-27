@@ -27,7 +27,7 @@ OpenRelTable::OpenRelTable( ) {
 	/*
 	 * Insert relation catalog entry to relcache[0]
 	 */
-	assert_res(relCatBlock.getRecord( relCatRecord.data( ), RELCAT_SLOTNUM_FOR_RELCAT ),SUCCESS);
+	assert_res( relCatBlock.getRecord( relCatRecord.data( ), RELCAT_SLOTNUM_FOR_RELCAT ), SUCCESS );
 	RelCacheTable::recordToRelCatEntry( relCatRecord.data( ), &relCatRecordCacheEntry.relCatEntry );
 	relCatRecordCacheEntry.recId	   = RecId{ RELCAT_BLOCK, RELCAT_SLOTNUM_FOR_RELCAT };
 	relCatRecordCacheEntry.searchIndex = RecId{ -1, -1 };
@@ -39,7 +39,7 @@ OpenRelTable::OpenRelTable( ) {
 	 * Insert Attribute catalog entry to relcache[1]
 	 */
 
-	assert_res(relCatBlock.getRecord( relCatRecord.data( ), RELCAT_SLOTNUM_FOR_ATTRCAT ),SUCCESS);
+	assert_res( relCatBlock.getRecord( relCatRecord.data( ), RELCAT_SLOTNUM_FOR_ATTRCAT ), SUCCESS );
 	RelCacheTable::recordToRelCatEntry( relCatRecord.data( ), &relCatRecordCacheEntry.relCatEntry );
 	relCatRecordCacheEntry.recId	   = RecId{ ATTRCAT_BLOCK, RELCAT_SLOTNUM_FOR_ATTRCAT };
 	relCatRecordCacheEntry.searchIndex = RecId{ -1, -1 };
@@ -62,12 +62,12 @@ OpenRelTable::OpenRelTable( ) {
 	RecBuffer attrCatBlock( ATTRCAT_BLOCK );
 	std::array<union Attribute, ATTRCAT_NO_ATTRS> attrCatRecord;
 	struct HeadInfo attrCatHeader;
-	assert_res(attrCatBlock.getHeader( &attrCatHeader ),SUCCESS);
+	assert_res( attrCatBlock.getHeader( &attrCatHeader ), SUCCESS );
 	std::list<AttrCacheEntry> relCatAttrList;
 	std::list<AttrCacheEntry> attrCatAttrList;
 
 	for ( int i = 0; i < attrCatHeader.numEntries; i++ ) {
-		assert_res(attrCatBlock.getRecord( attrCatRecord.data( ), i ),SUCCESS);
+		assert_res( attrCatBlock.getRecord( attrCatRecord.data( ), i ), SUCCESS );
 		AttrCacheEntry attrListEntry;
 		std::unique_ptr<AttrCatEntry> attrData = std::make_unique<AttrCatEntry>( );
 		AttrCacheTable::recordToAttrCatEntry( attrCatRecord.data( ), attrData.get( ) );
@@ -105,7 +105,7 @@ OpenRelTable::OpenRelTable( ) {
 
 int OpenRelTable::getRelId( char relName[ ATTR_SIZE ] ) {
 	for ( int i = 0; i < MAX_OPEN; i++ ) {
-		if ( std::strcmp( relName, tableMetaInfo[ i ].relName ) == 0 ) {
+		if ( !tableMetaInfo[ i ].free && std::strcmp( relName, tableMetaInfo[ i ].relName ) == 0 ) {
 			return i;
 		}
 	}
@@ -119,7 +119,52 @@ OpenRelTable::~OpenRelTable( ) {
 			OpenRelTable::closeRel( i );
 		}
 	}
-	// free all the memory that you allocated in the constructor
+
+	/**** Closing the catalog relations in the relation cache ****/
+
+	// releasing the relation cache entry of the attribute catalog
+
+	if ( RelCacheTable::relCache[ ATTRCAT_RELID ]->dirty ) {
+		/* Get the Relation Catalog entry from RelCacheTable::relCache
+		Then convert it to a record using RelCacheTable::relCatEntryToRecord(). */
+		RelCatEntry relCatEntry;
+		RelCacheTable::getRelCatEntry( ATTRCAT_RELID, &relCatEntry );
+		std::array<union Attribute, RELCAT_NO_ATTRS> relCatRecord;
+		RelCacheTable::relCatEntryToRecord( &relCatEntry, relCatRecord.data( ) );
+
+		// declaring an object of RecBuffer class to write back to the buffer
+		RecBuffer relCatBlock( RELCAT_BLOCK );
+		// Write back to the buffer using relCatBlock.setRecord() with recId.slot
+		relCatBlock.setRecord( relCatRecord.data( ), RELCAT_SLOTNUM_FOR_ATTRCAT );
+	}
+	// free the memory dynamically allocated to this RelCacheEntry
+	delete RelCacheTable::relCache[ ATTRCAT_RELID ];
+
+	// releasing the relation cache entry of the relation catalog
+
+	if ( RelCacheTable::relCache[ RELCAT_RELID ]->dirty ) {
+
+		/* Get the Relation Catalog entry from RelCacheTable::relCache
+		Then convert it to a record using RelCacheTable::relCatEntryToRecord(). */
+		RelCatEntry relCatEntry;
+		RelCacheTable::getRelCatEntry( RELCAT_RELID, &relCatEntry );
+		std::array<union Attribute, RELCAT_NO_ATTRS> relCatRecord;
+		RelCacheTable::relCatEntryToRecord( &relCatEntry, relCatRecord.data( ) );
+
+		// declaring an object of RecBuffer class to write back to the buffer
+		RecBuffer relCatBlock( RELCAT_BLOCK );
+
+		// Write back to the buffer using relCatBlock.setRecord() with recId.slot
+		relCatBlock.setRecord( relCatRecord.data( ), RELCAT_SLOTNUM_FOR_RELCAT );
+	}
+	// free the memory dynamically allocated for this RelCacheEntry
+	delete RelCacheTable::relCache[ RELCAT_RELID ];
+
+	// free the memory allocated for the attribute cache entries of the
+	// relation catalog and the attribute catalog
+	for ( int i = 0; i < MAX_OPEN; i++ ) {
+		AttrCacheTable::attrCache[ i ].clear( );
+	}
 }
 
 int OpenRelTable::getFreeOpenRelTableEntry( ) {
@@ -159,13 +204,14 @@ int OpenRelTable::closeRel( int relId ) {
 		RecBuffer relCatBlock( RelCacheTable::relCache[ relId ]->recId.block );
 
 		// Write back to the buffer using relCatBlock.setRecord() with recId.slot
-		assert_res(relCatBlock.setRecord( record.data( ), RelCacheTable::relCache[ relId ]->recId.slot ),SUCCESS);
+		assert_res( relCatBlock.setRecord( record.data( ), RelCacheTable::relCache[ relId ]->recId.slot ), SUCCESS );
 	}
 
 	// free the memory allocated in the relation and attribute caches which was
 	// allocated in the OpenRelTable::openRel() function
 	delete RelCacheTable::relCache[ relId ];
 	RelCacheTable::relCache[ relId ] = nullptr;
+	std::cout << "Clearing attr cache of " << AttrCacheTable::attrCache[ relId ].size( ) << " entries\n";
 	AttrCacheTable::attrCache[ relId ].clear( );
 
 	// update `tableMetaInfo` to set `relId` as a free slot
@@ -198,8 +244,8 @@ int OpenRelTable::openRel( char relName[ ATTR_SIZE ] ) {
 	// relcatRecId stores the rec-id of the relation `relName` in the Relation
 	// Catalog.
 	RecId relcatRecId;
-	assert_res(RelCacheTable::resetSearchIndex( RELCAT_RELID ), SUCCESS);
-	assert_res(RelCacheTable::getSearchIndex( RELCAT_RELID, &relcatRecId ),SUCCESS);
+	assert_res( RelCacheTable::resetSearchIndex( RELCAT_RELID ), SUCCESS );
+	assert_res( RelCacheTable::getSearchIndex( RELCAT_RELID, &relcatRecId ), SUCCESS );
 	union Attribute attrVal;
 	std::strcpy( attrVal.sVal, relName );
 	char pass[ ATTR_SIZE ] = "RelName";
@@ -223,7 +269,7 @@ int OpenRelTable::openRel( char relName[ ATTR_SIZE ] ) {
 	std::array<union Attribute, RELCAT_NO_ATTRS> relCatRecord;
 	struct RelCacheEntry relCatRecordCacheEntry;
 
-	assert_res(recBuffer.getRecord( relCatRecord.data( ), relcatRecId.slot ),SUCCESS);
+	assert_res( recBuffer.getRecord( relCatRecord.data( ), relcatRecId.slot ), SUCCESS );
 	RelCacheTable::recordToRelCatEntry( relCatRecord.data( ), &relCatRecordCacheEntry.relCatEntry );
 	relCatRecordCacheEntry.recId		  = relcatRecId;
 	RelCacheTable::relCache[ relId ]	  = new RelCacheEntry;
@@ -253,11 +299,11 @@ int OpenRelTable::openRel( char relName[ ATTR_SIZE ] ) {
 	std::array<union Attribute, ATTRCAT_NO_ATTRS> attrCatRecord;
 	std::list<AttrCacheEntry> attrCacheList;
 
-	assert_res(RelCacheTable::resetSearchIndex( ATTRCAT_RELID ),SUCCESS);
+	assert_res( RelCacheTable::resetSearchIndex( ATTRCAT_RELID ), SUCCESS );
 	RecId attrcatRecId = BlockAccess::linearSearch( ATTRCAT_RELID, pass, attrVal, EQ );
 	while ( attrcatRecId.slot != -1 && attrcatRecId.block != -1 ) {
 		RecBuffer attrBuffer( attrcatRecId.block );
-		assert_res(attrBuffer.getRecord( attrCatRecord.data( ), attrcatRecId.slot ),SUCCESS);
+		assert_res( attrBuffer.getRecord( attrCatRecord.data( ), attrcatRecId.slot ), SUCCESS );
 		AttrCacheEntry attrListEntry;
 		AttrCacheTable::recordToAttrCatEntry( attrCatRecord.data( ), &attrListEntry.attrCatEntry );
 		attrListEntry.recId = attrcatRecId;
