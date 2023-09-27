@@ -286,9 +286,34 @@ void BlockBuffer::releaseBlock( ) {
 	if ( this->blockNum != INVALID_BLOCKNUM ) {
 		auto buff = StaticBuffer::getBufferNum( this->blockNum );
 		if ( buff != E_BLOCKNOTINBUFFER ) {
-			StaticBuffer::metainfo[ buff ].free = true;
+			StaticBuffer::metainfo[ buff ].free		= true;
 		}
-		StaticBuffer::blockAllocMap[ buff ] = UNUSED_BLK;
+		StaticBuffer::blockAllocMap[ blockNum ] = UNUSED_BLK;
 		this->blockNum = INVALID_BLOCKNUM;
 	}
+}
+BlockBuffer::BlockBuffer( char blockType ) {
+	// allocate a block on the disk and a buffer in memory to hold the new block
+	// of given type using getFreeBlock function and get the return error codes if
+	// any.
+	int blockTypeInt;
+	if ( blockType == 'R' ) {
+		blockTypeInt = REC;
+	} else if ( blockType == 'I' ) {
+		blockTypeInt = IND_INTERNAL;
+	} else if ( blockType == 'L' ) {
+		blockTypeInt = IND_LEAF;
+	} else {
+		printf( "Invalid block type.\n" );
+		exit( 1 );
+	}
+	int blockNum = getFreeBlock( blockTypeInt );
+
+	// set the blockNum field of the object to that of the allocated block
+	// number if the method returned a valid block number,
+	// otherwise set the error code returned as the block number.
+	this->blockNum = blockNum;
+
+	// (The caller must check if the constructor allocatted block successfully
+	// by checking the value of block number field.)
 }

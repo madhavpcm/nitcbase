@@ -339,7 +339,9 @@ int BlockAccess::insert( int relId, Attribute* record ) {
 		   all the entries) (use RecBuffer::setSlotMap() function)
 		*/
 		std::unique_ptr<unsigned char[]> slotMap( new unsigned char[ numOfSlots ] );
-		std::fill( slotMap.get( ), slotMap.get( ) + numOfSlots, SLOT_UNOCCUPIED );
+		for ( int i = 0; i < numOfSlots; i++ ) {
+			slotMap[ i ] = SLOT_UNOCCUPIED;
+		}
 		assert_res( recBuffer.setSlotMap( slotMap.get( ) ), SUCCESS );
 
 		// if prevBlockNum != -1

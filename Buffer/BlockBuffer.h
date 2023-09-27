@@ -49,7 +49,7 @@ class BlockBuffer {
 
   public:
 	// methods
-	BlockBuffer( char blockType ) { this->blockNum = getFreeBlock( blockType ); };
+	BlockBuffer( char blockType );
 	BlockBuffer( int blk ) : blockNum( blk ){ };
 	int getBlockNum( ) { return this->blockNum; };
 	int getHeader( struct HeadInfo* head );

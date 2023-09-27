@@ -10,7 +10,7 @@ int Schema::openRel( char relName[ ATTR_SIZE ] ) {
 	// the OpenRelTable::openRel() function returns the rel-id if successful
 	// a valid rel-id will be within the range 0 <= relId < MAX_OPEN and any
 	// error codes will be negative
-	if ( ret >= 0 ) {
+	if ( ret >= 0  && ret < MAX_OPEN) {
 		return SUCCESS;
 	}
 
