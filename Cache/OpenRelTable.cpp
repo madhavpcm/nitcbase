@@ -172,7 +172,6 @@ int OpenRelTable::getFreeOpenRelTableEntry( ) {
 	  find a free entry in the Open Relation Table.*/
 	for ( int i = 2; i < MAX_OPEN; i++ ) {
 		if ( tableMetaInfo[ i ].free ) {
-			tableMetaInfo[ i ].free = false;
 			return i;
 		}
 	}
@@ -253,7 +252,6 @@ int OpenRelTable::openRel( char relName[ ATTR_SIZE ] ) {
 
 	if ( relcatRecId.slot == -1 && relcatRecId.block == -1 ) {
 		// (the relation is not found in the Relation Catalog.)
-		tableMetaInfo[ relId ].free = true;
 		return E_RELNOTEXIST;
 	}
 

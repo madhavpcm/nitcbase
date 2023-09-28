@@ -56,59 +56,89 @@ int Algebra::select(
 	} else if ( type == STRING ) {
 		strcpy( attrVal.sVal, strVal );
 	}
-
-	/*** Selecting records from the source relation ***/
-
-	// Before calling the search function, reset the search to start from the
-	// first hit using RelCacheTable::resetSearchIndex()
-	RelCacheTable::resetSearchIndex( srcRelId );
+	/*** Creating and opening the target relation ***/
+	// Prepare arguments for createRel() in the following way:
+	// get RelcatEntry of srcRel using RelCacheTable::getRelCatEntry()
 	RelCatEntry relCatEntry;
-	// get relCatEntry using RelCacheTable::getRelCatEntry()
-	RelCacheTable::getRelCatEntry( srcRelId, &relCatEntry );
+	assert_res( RelCacheTable::getRelCatEntry( srcRelId, &relCatEntry ), SUCCESS );
+	int src_nAttrs = relCatEntry.numAttrs; /* the no. of attributes present in src relation */
 
-	/************************
-	The following code prints the contents of a relation directly to the output
-	console. Direct console output is not permitted by the actual the NITCbase
-	specification and the output can only be inserted into a new relation. We will
-	be modifying it in the later stages to match the specification.
-	************************/
+	/* let attr_names[src_nAttrs][ATTR_SIZE] be a 2D array of type char
+	 (will store the attribute names of rel).
+	 */
+	// let attr_types[src_nAttrs] be an array of type int
+	std::unique_ptr<char[][ ATTR_SIZE ]> attr_names( new char[ src_nAttrs ][ ATTR_SIZE ] );
+	std::vector<int> attr_types( src_nAttrs );
 
-	std::vector<int> searchAttrType;
-	std::cout << '|';
-	for ( int i = 0; i < relCatEntry.numAttrs; ++i ) {
-		AttrCatEntry attrCatEntry;
-		// get attrCatEntry at offset i using AttrCacheTable::getAttrCatEntry()
-		AttrCacheTable::getAttrCatEntry( srcRelId, i, &attrCatEntry );
-		searchAttrType.push_back( attrCatEntry.attrType );
-
-		std::cout << std::setw( 16 ) << std::left << attrCatEntry.attrName << "|";
-		// printf( " %s |", attrCatEntry.attrName );
+	/*
+	 * iterate through 0 to src_nAttrs-1 :
+	 * get the i'th attribute's AttrCatEntry using
+	 * AttrCacheTable::getAttrCatEntry() fill the attr_names, attr_types
+	 * arrays that we declared with the entries of corresponding attributes
+	 */
+	for ( int i = 0; i < src_nAttrs; i++ ) {
+		AttrCatEntry attrCatOffsetEntry;
+		assert_res( AttrCacheTable::getAttrCatEntry( srcRelId, i, &attrCatOffsetEntry ), SUCCESS );
+		std::strcpy( attr_names.get( )[ i ], attrCatOffsetEntry.relName );
+		attr_types[ i ] = attrCatOffsetEntry.attrType;
 	}
-	std::cout << '\n';
 
-	while ( true ) {
-		RecId searchRes = BlockAccess::linearSearch( srcRelId, attr, attrVal, op );
-		if ( searchRes.block == -1 || searchRes.slot == -1 )
-			break;
+	/* Create the relation for target relation by calling Schema::createRel()
+	   by providing appropriate arguments */
+	// if the createRel returns an error code, then return that value.
+	int targetRelId = Schema::createRel( targetRel, src_nAttrs, attr_names.get( ), attr_types.data( ) );
 
-		// get the record at searchRes using BlockBuffer.getRecord
-		RecBuffer searchBlockBuffer( searchRes.block );
-		HeadInfo searchBlockHeader;
+	/* Open the newly created target relation by calling
+	   OpenRelTable::openRel() method and store the target relid
+	 * If opening fails, delete the target relation by calling
+	 */
 
-		searchBlockBuffer.getHeader( &searchBlockHeader );
-		std::vector<union Attribute> searchData( searchBlockHeader.numAttrs );
-		searchBlockBuffer.getRecord( searchData.data( ), searchRes.slot );
+	if ( targetRelId < 0 ) {
+		Schema::deleteRel( targetRel );
+		return targetRelId;
+	}
 
-		std::cout << '|';
-		for ( int i = 0; i < searchData.size( ); i++ ) {
-			if ( searchAttrType[ i ] == NUMBER ) {
-				std::cout << std::setw( 16 ) << std::left << searchData[ i ].nVal << "|";
-			} else {
-				std::cout << std::setw( 16 ) << std::left << searchData[ i ].sVal << "|";
-			}
+	/*** Selecting and inserting records into the target relation ***/
+	/* Before calling the search function, reset the search to start from the
+	   first using RelCacheTable::resetSearchIndex() */
+	std::unique_ptr<union Attribute[]> record( new union Attribute[ src_nAttrs ] );
+
+	/*
+	 *The
+	 *   BlockAccess::search() function can either do a linearSearch or a B+ tree
+	 *   search. Hence, reset the search index of the relation in the relation
+	 *cache using RelCacheTable::resetSearchIndex(). Also, reset the search index
+	 *in the attribute cache for the select condition attribute with name given by
+	 *   the argument `attr`. Use AttrCacheTable::resetSearchIndex(). Both these
+	 *   calls are necessary to ensure that search begins from the first record.
+	 */
+	RelCacheTable::resetSearchIndex( targetRelId );
+	// AttrCacheTable::resetSearchIndex( targetRelId, targetRel );
+
+	// read every record that satisfies the condition by repeatedly calling
+	// BlockAccess::search() until there are no more records to be read
+
+	while ( BlockAccess::search( targetRelId, record.get( ), attr, attrVal, op ) ==
+			SUCCESS /* BlockAccess::search() returns success */ ) {
+
+		// ret = BlockAccess::insert(targetRelId, record);
+		auto ret = BlockAccess::insert( targetRelId, record.get( ) );
+		// if (insert fails) {
+		//     close the targetrel(by calling Schema::closeRel(targetrel))
+		//     delete targetrel (by calling Schema::deleteRel(targetrel))
+		//     return ret;
+		// }
+		if ( ret != SUCCESS ) {
+			Schema::closeRel( targetRel );
+			Schema::deleteRel( targetRel );
+			return ret;
 		}
-		std::cout << '\n';
 	}
+
+	// Close the targetRel by calling closeRel() method of schema layer
+	Schema::closeRel( targetRel );
+
+	// return SUCCESS.
 
 	return SUCCESS;
 }
@@ -131,7 +161,7 @@ int Algebra::insert( char relName[ ATTR_SIZE ], int nAttrs, char record[][ ATTR_
 	// get the relation catalog entry from relation cache
 	// (use RelCacheTable::getRelCatEntry() of Cache Layer)
 	RelCatEntry relCatEntry;
-	assert_res(RelCacheTable::getRelCatEntry( relId, &relCatEntry ), SUCCESS);
+	assert_res( RelCacheTable::getRelCatEntry( relId, &relCatEntry ), SUCCESS );
 
 	/* if relCatEntry.numAttrs != numberOfAttributes in relation,
 	   return E_NATTRMISMATCH */
@@ -149,7 +179,7 @@ int Algebra::insert( char relName[ ATTR_SIZE ], int nAttrs, char record[][ ATTR_
 		// get the attr-cat entry for the i'th attribute from the attr-cache
 		// (use AttrCacheTable::getAttrCatEntry())
 		AttrCatEntry attrCatEntry;
-		assert_res(AttrCacheTable::getAttrCatEntry( relId, i, &attrCatEntry ),SUCCESS);
+		assert_res( AttrCacheTable::getAttrCatEntry( relId, i, &attrCatEntry ), SUCCESS );
 
 		// let type = attrCatEntry.attrType;
 		auto type = attrCatEntry.attrType;
@@ -164,10 +194,10 @@ int Algebra::insert( char relName[ ATTR_SIZE ], int nAttrs, char record[][ ATTR_
 			} else {
 				return E_ATTRTYPEMISMATCH;
 			}
-			std::cout << recordValues[i].nVal << ' ';
+			std::cout << recordValues[ i ].nVal << ' ';
 		} else if ( type == STRING ) {
 			std::strcpy( recordValues[ i ].sVal, record[ i ] );
-			std::cout << recordValues[i].sVal << ' ';
+			std::cout << recordValues[ i ].sVal << ' ';
 		}
 	}
 	std::cout << '\n';
@@ -177,4 +207,139 @@ int Algebra::insert( char relName[ ATTR_SIZE ], int nAttrs, char record[][ ATTR_
 	int retVal = BlockAccess::insert( relId, recordValues.data( ) );
 	return retVal;
 }
-// will return if a string can be parsed as a floating point number
+
+int Algebra::project(
+	char srcRel[ ATTR_SIZE ], char targetRel[ ATTR_SIZE ], int tar_nAttrs, char tar_Attrs[][ ATTR_SIZE ] ) {
+
+	int srcRelId = OpenRelTable::getRelId( srcRel );
+	if ( srcRelId == E_RELNOTOPEN )
+		return E_RELNOTOPEN;
+
+	RelCatEntry srcRelCatEntry;
+	assert_res( RelCacheTable::getRelCatEntry( srcRelId, &srcRelCatEntry ), SUCCESS );
+
+	int srcNumAttrs = srcRelCatEntry.numAttrs;
+	std::unique_ptr<int[]> attrOffsets( new int[ tar_nAttrs ] );
+	std::unique_ptr<int[]> attrTypes( new int[ tar_nAttrs ] );
+
+	for ( int i = 0; i < tar_nAttrs; i++ ) {
+		AttrCatEntry attrCatOffsetEntry;
+		auto res = AttrCacheTable::getAttrCatEntry( srcRelId, i, &attrCatOffsetEntry );
+		if ( res != SUCCESS )
+			return E_ATTRNOTEXIST;
+
+		attrOffsets.get( )[ i ] = attrCatOffsetEntry.offset;
+		attrTypes.get( )[ i ]	= attrCatOffsetEntry.attrType;
+	}
+
+	auto res = Schema::createRel( targetRel, tar_nAttrs, tar_Attrs, attrTypes.get( ) );
+	if ( res != SUCCESS )
+		return res;
+
+	int targetRelId = OpenRelTable::openRel( targetRel );
+	if ( targetRelId < 0 ) {
+		Schema::deleteRel( targetRel );
+		return targetRelId;
+	}
+	RelCacheTable::resetSearchIndex( srcRelId );
+	std::unique_ptr<union Attribute[]> record( new union Attribute[ srcNumAttrs ] );
+
+	res = BlockAccess::project( srcRelId, record.get( ) );
+	while ( res == SUCCESS /* BlockAccess::project(srcRelId, record) returns SUCCESS */ ) {
+		std::unique_ptr<union Attribute[]> proj_record( new union Attribute[ tar_nAttrs ] );
+		for ( int i = 0; i < tar_nAttrs; i++ ) {
+			proj_record.get( )[ i ] = record.get( )[ attrOffsets[ i ] ];
+		}
+		auto ret = BlockAccess::insert( targetRelId, record.get( ) );
+
+		if ( ret != SUCCESS ) {
+			assert_res( Schema::closeRel( targetRel ), SUCCESS );
+			assert_res( Schema::deleteRel( targetRel ), SUCCESS );
+			return ret;
+		}
+		res = BlockAccess::project( srcRelId, record.get( ) );
+	}
+	assert_res( Schema::closeRel( targetRel ), SUCCESS );
+	return SUCCESS;
+}
+
+int Algebra::project( char srcRel[ ATTR_SIZE ], char targetRel[ ATTR_SIZE ] ) {
+
+	// if srcRel is not open in open relation table, return E_RELNOTOPEN
+
+	// get RelCatEntry of srcRel using RelCacheTable::getRelCatEntry()
+
+	// get the no. of attributes present in relation from the fetched RelCatEntry.
+
+	// attrNames and attrTypes will be used to store the attribute names
+	// and types of the source relation respectively
+	int srcRelId = OpenRelTable::getRelId( srcRel );
+	if ( srcRelId == E_RELNOTOPEN )
+		return E_RELNOTOPEN;
+
+	RelCatEntry srcRelCatEntry;
+	assert_res( RelCacheTable::getRelCatEntry( srcRelId, &srcRelCatEntry ), SUCCESS );
+
+	int srcNumAttrs = srcRelCatEntry.numAttrs;
+	std::unique_ptr<char[][ ATTR_SIZE ]> attrNames( new char[ srcNumAttrs ][ ATTR_SIZE ] );
+	std::unique_ptr<int[]> attrTypes( new int[ srcNumAttrs ] );
+
+	/*iterate through every attribute of the source relation :
+	 * - get the AttributeCat entry of the attribute with offset.
+	 *   (using AttrCacheTable::getAttrCatEntry())
+	 * - fill the arrays `attrNames` and `attrTypes` that we declared earlier
+	 *   with the data about each attribute
+	 */
+	for ( int i = 0; i < srcNumAttrs; i++ ) {
+		AttrCatEntry srcAttrCatEntry;
+		AttrCacheTable::getAttrCatEntry( srcRelId, i, &srcAttrCatEntry );
+		std::strcpy( attrNames.get( )[ i ], srcAttrCatEntry.attrName );
+		attrTypes.get( )[ i ] = srcAttrCatEntry.attrType;
+	}
+
+	/*** Creating and opening the target relation ***/
+
+	// Create a relation for target relation by calling Schema::createRel()
+
+	// if the createRel returns an error code, then return that value.
+	// Open the newly created target relation by calling OpenRelTable::openRel()
+	// and get the target relid
+
+	// If opening fails, delete the target relation by calling Schema::deleteRel()
+	// of return the error value returned from openRel().
+
+	/*** Inserting projected records into the target relation ***/
+
+	// Take care to reset the searchIndex before calling the project function
+	// using RelCacheTable::resetSearchIndex()
+	auto res = Schema::createRel( targetRel, srcNumAttrs, attrNames.get( ), attrTypes.get( ) );
+	if ( res != SUCCESS )
+		return res;
+
+	int targetRelId = OpenRelTable::openRel( targetRel );
+	if ( targetRelId < 0 ) {
+		Schema::deleteRel( targetRel );
+		return targetRelId;
+	}
+	RelCacheTable::resetSearchIndex( srcRelId );
+	std::unique_ptr<union Attribute[]> record( new union Attribute[ srcNumAttrs ] );
+
+	res = BlockAccess::project( srcRelId, record.get( ) );
+	while ( res == SUCCESS /* BlockAccess::project(srcRelId, record) returns SUCCESS */ ) {
+		// record will contain the next record
+
+		// ret = BlockAccess::insert(targetRelId, proj_record);
+		auto ret = BlockAccess::insert( targetRelId, record.get( ) );
+
+		if ( ret != SUCCESS /* insert fails */ ) {
+			assert_res( Schema::closeRel( targetRel ), SUCCESS );
+			assert_res( Schema::deleteRel( targetRel ), SUCCESS );
+			return ret;
+			// return ret;
+		}
+	}
+
+	// Close the targetRel by calling Schema::closeRel()
+	assert_res( Schema::closeRel( srcRel ), SUCCESS );
+	return SUCCESS;
+}

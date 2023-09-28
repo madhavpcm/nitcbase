@@ -10,7 +10,7 @@ int Schema::openRel( char relName[ ATTR_SIZE ] ) {
 	// the OpenRelTable::openRel() function returns the rel-id if successful
 	// a valid rel-id will be within the range 0 <= relId < MAX_OPEN and any
 	// error codes will be negative
-	if ( ret >= 0  && ret < MAX_OPEN) {
+	if ( ret >= 0 && ret < MAX_OPEN ) {
 		return SUCCESS;
 	}
 
@@ -106,7 +106,7 @@ int Schema::createRel( char relName[], int nAttrs, char attrs[][ ATTR_SIZE ], in
 	relCatRecord[ RELCAT_LAST_BLOCK_INDEX ].nVal = -1;
 	// offset RELCAT_NO_SLOTS_PER_BLOCK_INDEX: floor((2016 / (16 * nAttrs + 1)))
 	// (number of slots is calculated as specified in the physical layer docs)
-	relCatRecord[ RELCAT_NO_SLOTS_PER_BLOCK_INDEX ].nVal =  floor ((2016 / (16 * nAttrs + 1)));
+	relCatRecord[ RELCAT_NO_SLOTS_PER_BLOCK_INDEX ].nVal = floor( ( 2016 / ( 16 * nAttrs + 1 ) ) );
 
 	// retVal = BlockAccess::insert(RELCAT_RELID(=0), relCatRecord);
 	auto retVal = BlockAccess::insert( RELCAT_RELID, relCatRecord.data( ) );
@@ -120,7 +120,7 @@ int Schema::createRel( char relName[], int nAttrs, char attrs[][ ATTR_SIZE ], in
 	for ( int i = 0; i < nAttrs; i++ ) {
 		/* declare Attribute attrCatRecord[6] to store the attribute catalog
 		   record corresponding to i'th attribute of the argument passed*/
-		std::cout << "Inserting " << attrs[i] << " of type " << attrtype[i] << " into " << relName <<'\n';
+		std::cout << "Inserting " << attrs[ i ] << " of type " << attrtype[ i ] << " into " << relName << '\n';
 		std::array<union Attribute, ATTRCAT_NO_ATTRS> attrCatRecord;
 		// (where i is the iterator of the loop)
 		// fill attrCatRecord fields as given below
