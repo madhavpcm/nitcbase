@@ -79,19 +79,23 @@ int Algebra::select(
 	for ( int i = 0; i < src_nAttrs; i++ ) {
 		AttrCatEntry attrCatOffsetEntry;
 		assert_res( AttrCacheTable::getAttrCatEntry( srcRelId, i, &attrCatOffsetEntry ), SUCCESS );
-		std::strcpy( attr_names.get( )[ i ], attrCatOffsetEntry.relName );
+		std::strcpy( attr_names.get( )[ i ], attrCatOffsetEntry.attrName);
 		attr_types[ i ] = attrCatOffsetEntry.attrType;
 	}
 
 	/* Create the relation for target relation by calling Schema::createRel()
 	   by providing appropriate arguments */
 	// if the createRel returns an error code, then return that value.
-	int targetRelId = Schema::createRel( targetRel, src_nAttrs, attr_names.get( ), attr_types.data( ) );
+	auto res = Schema::createRel( targetRel, src_nAttrs, attr_names.get( ), attr_types.data( ) );
+	if ( res != SUCCESS ) {
+		return res;
+	}
 
 	/* Open the newly created target relation by calling
 	   OpenRelTable::openRel() method and store the target relid
 	 * If opening fails, delete the target relation by calling
 	 */
+	int targetRelId = OpenRelTable::openRel( targetRel );
 
 	if ( targetRelId < 0 ) {
 		Schema::deleteRel( targetRel );
@@ -112,14 +116,15 @@ int Algebra::select(
 	 *   the argument `attr`. Use AttrCacheTable::resetSearchIndex(). Both these
 	 *   calls are necessary to ensure that search begins from the first record.
 	 */
+	RelCacheTable::resetSearchIndex( srcRelId );
 	RelCacheTable::resetSearchIndex( targetRelId );
 	// AttrCacheTable::resetSearchIndex( targetRelId, targetRel );
 
 	// read every record that satisfies the condition by repeatedly calling
 	// BlockAccess::search() until there are no more records to be read
 
-	while ( BlockAccess::search( targetRelId, record.get( ), attr, attrVal, op ) ==
-			SUCCESS /* BlockAccess::search() returns success */ ) {
+	res = BlockAccess::search( srcRelId, record.get( ), attr, attrVal, op );
+	while ( res == SUCCESS /* BlockAccess::search() returns success */ ) {
 
 		// ret = BlockAccess::insert(targetRelId, record);
 		auto ret = BlockAccess::insert( targetRelId, record.get( ) );
@@ -133,10 +138,12 @@ int Algebra::select(
 			Schema::deleteRel( targetRel );
 			return ret;
 		}
+
+		res = BlockAccess::search( srcRelId, record.get( ), attr, attrVal, op );
 	}
 
 	// Close the targetRel by calling closeRel() method of schema layer
-	Schema::closeRel( targetRel );
+	assert_res( Schema::closeRel( targetRel ), SUCCESS );
 
 	// return SUCCESS.
 
@@ -224,7 +231,7 @@ int Algebra::project(
 
 	for ( int i = 0; i < tar_nAttrs; i++ ) {
 		AttrCatEntry attrCatOffsetEntry;
-		auto res = AttrCacheTable::getAttrCatEntry( srcRelId, i, &attrCatOffsetEntry );
+		auto res = AttrCacheTable::getAttrCatEntry( srcRelId, tar_Attrs[ i ], &attrCatOffsetEntry );
 		if ( res != SUCCESS )
 			return E_ATTRNOTEXIST;
 
@@ -250,7 +257,7 @@ int Algebra::project(
 		for ( int i = 0; i < tar_nAttrs; i++ ) {
 			proj_record.get( )[ i ] = record.get( )[ attrOffsets[ i ] ];
 		}
-		auto ret = BlockAccess::insert( targetRelId, record.get( ) );
+		auto ret = BlockAccess::insert( targetRelId, proj_record.get( ) );
 
 		if ( ret != SUCCESS ) {
 			assert_res( Schema::closeRel( targetRel ), SUCCESS );
@@ -292,7 +299,7 @@ int Algebra::project( char srcRel[ ATTR_SIZE ], char targetRel[ ATTR_SIZE ] ) {
 	 */
 	for ( int i = 0; i < srcNumAttrs; i++ ) {
 		AttrCatEntry srcAttrCatEntry;
-		AttrCacheTable::getAttrCatEntry( srcRelId, i, &srcAttrCatEntry );
+		assert_res( AttrCacheTable::getAttrCatEntry( srcRelId, i, &srcAttrCatEntry ), SUCCESS );
 		std::strcpy( attrNames.get( )[ i ], srcAttrCatEntry.attrName );
 		attrTypes.get( )[ i ] = srcAttrCatEntry.attrType;
 	}
@@ -337,9 +344,10 @@ int Algebra::project( char srcRel[ ATTR_SIZE ], char targetRel[ ATTR_SIZE ] ) {
 			return ret;
 			// return ret;
 		}
+		res = BlockAccess::project( srcRelId, record.get( ) );
 	}
 
 	// Close the targetRel by calling Schema::closeRel()
-	assert_res( Schema::closeRel( srcRel ), SUCCESS );
+	assert_res( Schema::closeRel( targetRel ), SUCCESS );
 	return SUCCESS;
 }

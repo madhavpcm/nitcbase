@@ -653,7 +653,6 @@ int BlockAccess::project( int relId, Attribute* record ) {
 	*/
 	if ( prevRecId.block == -1 && prevRecId.slot == -1 ) {
 		// (new project operation. start from beginning)
-		assert_res( RelCacheTable::resetSearchIndex( relId ), SUCCESS );
 		// get the first record block of the relation from the relation cache
 		// (use RelCacheTable::getRelCatEntry() function of Cache Layer)
 		RelCatEntry relCatEntry;
@@ -669,7 +668,7 @@ int BlockAccess::project( int relId, Attribute* record ) {
 		// block = previous search index's block
 		// slot = previous search index's slot + 1
 		block = prevRecId.block;
-		slot  = prevRecId.slot;
+		slot  = prevRecId.slot + 1;
 	}
 
 	// The following code finds the next record of the relation
@@ -695,7 +694,7 @@ int BlockAccess::project( int relId, Attribute* record ) {
 			// (NOTE: if this is the last block, rblock would be -1. this would
 			//        set block = -1 and fail the loop condition )
 
-		} else if ( *( currSlotMap.get( ) + slot ) == SLOT_UNOCCUPIED /* slot is free */ ) {
+		} else if ( currSlotMap.get( )[ slot ] == SLOT_UNOCCUPIED /* slot is free */ ) {
 			// (i.e slot-th entry in slotMap contains
 			// SLOT_UNOCCUPIED)
 			slot++;
