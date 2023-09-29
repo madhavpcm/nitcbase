@@ -79,7 +79,7 @@ int Algebra::select(
 	for ( int i = 0; i < src_nAttrs; i++ ) {
 		AttrCatEntry attrCatOffsetEntry;
 		assert_res( AttrCacheTable::getAttrCatEntry( srcRelId, i, &attrCatOffsetEntry ), SUCCESS );
-		std::strcpy( attr_names.get( )[ i ], attrCatOffsetEntry.attrName);
+		std::strcpy( attr_names.get( )[ i ], attrCatOffsetEntry.attrName );
 		attr_types[ i ] = attrCatOffsetEntry.attrType;
 	}
 
@@ -117,8 +117,7 @@ int Algebra::select(
 	 *   calls are necessary to ensure that search begins from the first record.
 	 */
 	RelCacheTable::resetSearchIndex( srcRelId );
-	RelCacheTable::resetSearchIndex( targetRelId );
-	// AttrCacheTable::resetSearchIndex( targetRelId, targetRel );
+	AttrCacheTable::resetSearchIndex( srcRelId, attr );
 
 	// read every record that satisfies the condition by repeatedly calling
 	// BlockAccess::search() until there are no more records to be read
