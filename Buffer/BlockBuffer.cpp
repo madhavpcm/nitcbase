@@ -57,7 +57,6 @@ int BlockBuffer::loadBlockAndGetBufferPtr( unsigned char** buffer ) {
 		}
 		StaticBuffer::metainfo[ bufferNum ].timeStamp = 0;
 	} else {
-		std::cout << "Reading block " << blockNum << '\n';
 		int freeBuffer = StaticBuffer::getFreeBuffer( this->blockNum );
 
 		if ( freeBuffer == E_OUTOFBOUND )

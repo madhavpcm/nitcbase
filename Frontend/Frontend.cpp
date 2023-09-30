@@ -1,4 +1,5 @@
 #include "Frontend.h"
+#include <chrono>
 #include <cstring>
 #include <iostream>
 
@@ -48,7 +49,14 @@ int Frontend::insert_into_table_values( char relname[ ATTR_SIZE ], int attr_coun
 
 int Frontend::select_from_table( char relname_source[ ATTR_SIZE ], char relname_target[ ATTR_SIZE ] ) {
 	// Algebra::project
-	return Algebra::project( relname_source, relname_target );
+
+	auto start_time = std::chrono::high_resolution_clock::now( );
+	auto res		= Algebra::project( relname_source, relname_target );
+	auto end_time	= std::chrono::high_resolution_clock::now( );
+
+	auto duration = std::chrono::duration_cast<std::chrono::microseconds>( end_time - start_time );
+	std::cout << "Time taken to select : " << duration.count( ) << " microsecond(s)" << std::endl;
+	return res;
 }
 
 int Frontend::select_attrlist_from_table( char relname_source[ ATTR_SIZE ], char relname_target[ ATTR_SIZE ],
@@ -59,7 +67,12 @@ int Frontend::select_attrlist_from_table( char relname_source[ ATTR_SIZE ], char
 
 int Frontend::select_from_table_where( char relname_source[ ATTR_SIZE ], char relname_target[ ATTR_SIZE ],
 	char attribute[ ATTR_SIZE ], int op, char value[ ATTR_SIZE ] ) {
-	return Algebra::select( relname_source, relname_target, attribute, op, value );
+	auto start_time = std::chrono::high_resolution_clock::now( );
+	auto res		= Algebra::select( relname_source, relname_target, attribute, op, value );
+	auto end_time	= std::chrono::high_resolution_clock::now( );
+	auto duration	= std::chrono::duration_cast<std::chrono::microseconds>( end_time - start_time );
+	std::cout << "Time taken to select : " << duration.count( ) << " microsecond(s)" << std::endl;
+	return res;
 }
 
 int Frontend::select_attrlist_from_table_where( char relname_source[ ATTR_SIZE ], char relname_target[ ATTR_SIZE ],

@@ -121,15 +121,17 @@ RecId BPlusTree::bPlusSearch( int relId, char attrName[ ATTR_SIZE ], Attribute a
 			 if op == GT, then intEntry.attrVal > attrVal
 			 Hint: the helper function compareAttrs() can be used for comparing
 			*/
-			int i = MAX_KEYS_INTERNAL;
-			for ( i = 0; i < MAX_KEYS_INTERNAL; i++ ) {
+			int i = 0;
+			for ( i = 0; i < intHead.numEntries; i++ ) {
 				assert_res( internalBlk.getEntry( &intEntry, i ), SUCCESS );
-				if ( compareAttrs( &intEntry.attrVal, &attrVal, attrCatEntry.attrType ) == 0 ) {
+				int cmpVal = compareAttrs( &intEntry.attrVal, &attrVal, attrCatEntry.attrType);
+				if( ((op == EQ || op == GE) && cmpVal >=0 ) || (op == GT && cmpVal > 0)) {
 					break;
 				}
 			}
+			std::cout << '\n';
 
-			if ( i < MAX_KEYS_INTERNAL /* such an entry is found*/ ) {
+			if ( i < intHead.numEntries/* such an entry is found*/ ) {
 				// move to the left child of that entry
 				block = intEntry.lChild; // left child of the entry
 
@@ -156,7 +158,7 @@ RecId BPlusTree::bPlusSearch( int relId, char attrName[ ATTR_SIZE ], Attribute a
 		HeadInfo leafHead;
 
 		// load the header to leafHead using BlockBuffer::getHeader().
-		leafBlk.getHeader( &leafHead );
+		assert_res(leafBlk.getHeader( &leafHead ), SUCCESS);
 
 		// declare leafEntry which will be used to store an entry from leafBlk
 		Index leafEntry;
@@ -182,7 +184,7 @@ RecId BPlusTree::bPlusSearch( int relId, char attrName[ ATTR_SIZE ], Attribute a
 
 				// set search index to {block, index}
 				searchIndex = { block, index };
-				AttrCacheTable::setSearchIndex( relId, attrName, &searchIndex );
+				assert_res(AttrCacheTable::setSearchIndex( relId, attrName, &searchIndex ), SUCCESS);
 				// return the recId {leafEntry.block, leafEntry.slot}.
 				return { leafEntry.block, leafEntry.slot };
 

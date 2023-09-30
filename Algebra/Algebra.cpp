@@ -20,14 +20,6 @@ bool isNumber( char* str ) {
 	int ret = sscanf( str, "%f %n", &ignore, &len );
 	return ret == 1 && len == strlen( str );
 }
-/* used to select all the records that satisfy a condition.
-the arguments of the function are
-- srcRel - the source relation we want to select from
-- targetRel - the relation we want to select into. (ignore for now)
-- attr - the attribute that the condition is checking
-- op - the operator of the condition
-- strVal - the value that we want to compare against (represented as a string)
-*/
 int Algebra::select(
 	char srcRel[ ATTR_SIZE ], char targetRel[ ATTR_SIZE ], char attr[ ATTR_SIZE ], int op, char strVal[ ATTR_SIZE ] ) {
 	int srcRelId = OpenRelTable::getRelId( srcRel ); // we'll implement this later
@@ -116,7 +108,9 @@ int Algebra::select(
 	 *   the argument `attr`. Use AttrCacheTable::resetSearchIndex(). Both these
 	 *   calls are necessary to ensure that search begins from the first record.
 	 */
+
 	RelCacheTable::resetSearchIndex( srcRelId );
+	RelCacheTable::resetSearchIndex( targetRelId );
 	AttrCacheTable::resetSearchIndex( srcRelId, attr );
 
 	// read every record that satisfies the condition by repeatedly calling

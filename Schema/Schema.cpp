@@ -188,3 +188,4 @@ int Schema::deleteRel( char* relName ) {
 	   if the BlockBuffer was initialized with an invalid block number.
 	*/
 }
+
