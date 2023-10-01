@@ -4,6 +4,7 @@
 #include "../BlockAccess/BlockAccess.h"
 #include "../Cache/OpenRelTable.h"
 #include "../define/constants.h"
+#include "../BPlusTree/BPlusTree.h"
 
 class Schema {
   public:

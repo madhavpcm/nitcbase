@@ -397,7 +397,32 @@ int BlockAccess::insert( int relId, Attribute* record ) {
 	relCatEntry.numRecs++;
 	assert_res( RelCacheTable::setRelCatEntry( relId, &relCatEntry ), SUCCESS );
 
-	return SUCCESS;
+	int flag = SUCCESS;
+	// Iterate over all the attributes of the relation
+	// (let attrOffset be iterator ranging from 0 to numOfAttributes-1)
+	for ( int i = 0; i < relCatEntry.numAttrs; i++ ) {
+		// get the attribute catalog entry for the attribute from the attribute
+		// cache (use AttrCacheTable::getAttrCatEntry() with args relId and
+		// attrOffset)
+		AttrCatEntry attrCatEntry;
+		AttrCacheTable::getAttrCatEntry( relId, i, &attrCatEntry );
+		// get the root block field from the attribute catalog entry
+		int rootBlock = attrCatEntry.rootBlock;
+
+		if ( rootBlock != -1 ) {
+			/* insert the new record into the attribute's bplus tree using
+			 BPlusTree::bPlusInsert()*/
+			int retVal = BPlusTree::bPlusInsert( relId, attrCatEntry.attrName, record[ i ], rec_id );
+
+			if ( retVal == E_DISKFULL ) {
+				//(index for this attribute has been destroyed)
+				// flag = E_INDEX_BLOCKS_RELEASED
+				flag = E_INDEX_BLOCKS_RELEASED;
+			}
+		}
+	}
+
+	return flag;
 }
 
 int BlockAccess::deleteRelation( char relName[ ATTR_SIZE ] ) {
@@ -558,6 +583,7 @@ int BlockAccess::deleteRelation( char relName[ ATTR_SIZE ] ) {
 		if ( rootBlock != -1 ) {
 			// delete the bplus tree rooted at rootBlock using
 			// BPlusTree::bPlusDestroy(https://www.youtube.com/watch?v=rKsTbGtygCs)
+			assert_res(BPlusTree::bPlusDestroy( rootBlock ), SUCCESS);
 		}
 	}
 

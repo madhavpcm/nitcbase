@@ -45,6 +45,19 @@ void AttrCacheTable::recordToAttrCatEntry( union Attribute record[ ATTRCAT_NO_AT
 	attrCatEntry->rootBlock	  = ( int )record[ ATTRCAT_ROOT_BLOCK_INDEX ].nVal;
 	attrCatEntry->primaryFlag = ( int )record[ ATTRCAT_PRIMARY_FLAG_INDEX ].nVal;
 }
+/* Converts a attribute catalog record to AttrCatEntry
+ * We get the record as Attribute[] from the BlockBuffer.getRecord() function.
+ This function will convert that to a struct AttrCatEntry type.
+*/
+void AttrCacheTable::attrCatEntryToRecord( AttrCatEntry* attrCatEntry, union Attribute record[ ATTRCAT_NO_ATTRS ] ) {
+	// copy the rest of the fields in the record to the attrCacheEntry struct
+	std::copy( attrCatEntry->relName, attrCatEntry->relName + ATTR_SIZE, record[ ATTRCAT_REL_NAME_INDEX ].sVal );
+	record[ ATTRCAT_OFFSET_INDEX ].nVal = attrCatEntry->offset;
+	std::copy( attrCatEntry->attrName, attrCatEntry->attrName + ATTR_SIZE, record[ ATTRCAT_ATTR_NAME_INDEX ].sVal );
+	record[ ATTRCAT_ATTR_TYPE_INDEX ].nVal	  = attrCatEntry->attrType;
+	record[ ATTRCAT_ROOT_BLOCK_INDEX ].nVal	  = attrCatEntry->rootBlock;
+	record[ ATTRCAT_PRIMARY_FLAG_INDEX ].nVal = attrCatEntry->primaryFlag;
+}
 
 /* returns the attribute with name `attrName` for the relation corresponding to
 relId NOTE: this function expects the caller to allocate memory for
@@ -176,4 +189,62 @@ int AttrCacheTable::resetSearchIndex( int relId, int attrOffset ) {
 	// set the search index to {-1, -1} using AttrCacheTable::setSearchIndex
 	return AttrCacheTable::setSearchIndex( relId, attrOffset, &id );
 	// return the value returned by setSearchIndex
+}
+
+int AttrCacheTable::setAttrCatEntry( int relId, char attrName[ ATTR_SIZE ], AttrCatEntry* attrCatBuf ) {
+
+	if ( relId < 0 || relId >= MAX_OPEN /*relId is outside the range [0, MAX_OPEN-1]*/ ) {
+		return E_OUTOFBOUND;
+	}
+
+	if ( attrCache[ relId ].size( ) == 0 /*entry corresponding to the relId in the Attribute Cache Table is free*/ ) {
+		return E_RELNOTOPEN;
+	}
+
+	for ( auto& attribute : attrCache[ relId ] /* each attribute corresponding to relation with relId */ ) {
+		if( std::strcmp(attribute.attrCatEntry.attrName , attrName) == 0/* the attrName/offset field of the AttrCatEntry
+       is equal to the input attrName/attrOffset */)
+    {
+			// copy the attrCatBuf to the corresponding Attribute Catalog entry in
+			// the Attribute Cache Table.
+			attribute.attrCatEntry = *attrCatBuf;
+
+			// set the dirty flag of the corresponding Attribute Cache entry in the
+			// Attribute Cache Table.
+			attribute.dirty = true;
+
+			return SUCCESS;
+		}
+	}
+
+	return E_ATTRNOTEXIST;
+}
+
+int AttrCacheTable::setAttrCatEntry( int relId, int attrOffset, AttrCatEntry* attrCatBuf ) {
+
+	if ( relId < 0 || relId >= MAX_OPEN /*relId is outside the range [0, MAX_OPEN-1]*/ ) {
+		return E_OUTOFBOUND;
+	}
+
+	if ( attrCache[ relId ].size( ) == 0 /*entry corresponding to the relId in the Attribute Cache Table is free*/ ) {
+		return E_RELNOTOPEN;
+	}
+
+	for ( auto& attribute : attrCache[ relId ] /* each attribute corresponding to relation with relId */ ) {
+		if( attribute.attrCatEntry.offset == attrOffset/* the attrName/offset field of the AttrCatEntry
+       is equal to the input attrName/attrOffset */)
+    {
+			// copy the attrCatBuf to the corresponding Attribute Catalog entry in
+			// the Attribute Cache Table.
+			attribute.attrCatEntry = *attrCatBuf;
+
+			// set the dirty flag of the corresponding Attribute Cache entry in the
+			// Attribute Cache Table.
+			attribute.dirty = true;
+
+			return SUCCESS;
+		}
+	}
+
+	return E_ATTRNOTEXIST;
 }

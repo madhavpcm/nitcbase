@@ -191,7 +191,7 @@ int OpenRelTable::closeRel( int relId ) {
 	if ( tableMetaInfo[ relId ].free ) {
 		return E_RELNOTOPEN;
 	}
-	if ( RelCacheTable::relCache[ relId ] != nullptr && RelCacheTable::relCache[ relId ]->dirty ) {
+	if ( RelCacheTable::relCache[ relId ]->dirty ) {
 
 		/* Get the Relation Catalog entry from RelCacheTable::relCache
 		Then convert it to a record using RelCacheTable::relCatEntryToRecord(). */
@@ -208,7 +208,15 @@ int OpenRelTable::closeRel( int relId ) {
 	// free the memory allocated in the relation and attribute caches which was
 	// allocated in the OpenRelTable::openRel() function
 	delete RelCacheTable::relCache[ relId ];
-	std::cout << "Clearing attr cache of " << AttrCacheTable::attrCache[ relId ].size( ) << " entries\n";
+
+	for ( auto& entry : AttrCacheTable::attrCache[ relId ] ) {
+		if ( entry.dirty ) {
+			std::array<union Attribute, ATTRCAT_NO_ATTRS> record;
+			AttrCacheTable::attrCatEntryToRecord( &entry.attrCatEntry, record.data( ) );
+			RecBuffer attrBuffer( entry.recId.block );
+			assert_res( attrBuffer.setRecord( record.data( ), entry.recId.slot ), SUCCESS );
+		}
+	}
 	AttrCacheTable::attrCache[ relId ].clear( );
 
 	// update `tableMetaInfo` to set `relId` as a free slot
