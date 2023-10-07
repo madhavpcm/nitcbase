@@ -252,9 +252,12 @@ int BPlusTree::bPlusCreate( int relId, char attrName[ ATTR_SIZE ] ) {
 	int rootBlock = rootBlockBuf.getBlockNum( );
 
 	// if there is no more disk space for creating an index
-	if ( rootBlock == E_DISKFULL ) {
-		return E_DISKFULL;
+	if ( rootBlock < 0 ) {
+		return rootBlock;
 	}
+
+	attrCatEntry.rootBlock = rootBlock;
+	assert_res( AttrCacheTable::setAttrCatEntry( relId, attrName, &attrCatEntry ), SUCCESS );
 
 	// load the relation catalog entry into relCatEntry
 	// using RelCacheTable::getRelCatEntry().
@@ -274,7 +277,7 @@ int BPlusTree::bPlusCreate( int relId, char attrName[ ATTR_SIZE ] ) {
 		std::unique_ptr<unsigned char[]> currSlotMap( new unsigned char[ relCatEntry.numSlotsPerBlk ] );
 
 		// load the slot map into slotMap using RecBuffer::getSlotMap().
-		currBuffer.getSlotMap( currSlotMap.get( ) );
+		assert_res(currBuffer.getSlotMap( currSlotMap.get( ) ), SUCCESS);
 
 		// for every occupied slot of the block
 		for ( int i = 0; i < relCatEntry.numSlotsPerBlk; i++ ) {
@@ -391,7 +394,10 @@ int BPlusTree::bPlusInsert( int relId, char attrName[ ATTR_SIZE ], Attribute att
 
 	int leafBlkNum = findLeafToInsert( rootBlock, attrVal, attrCatEntry.attrType );
 
-	Index indVal{ attrVal, recId.block, recId.slot };
+	Index indVal;
+	indVal.attrVal = attrVal;
+	indVal.block   = recId.block;
+	indVal.slot	   = recId.slot;
 	// insert the attrVal and recId to the leaf block at blockNum using the
 	// insertIntoLeaf() function.
 	// declare a struct Index with attrVal = attrVal, block = recId.block and
@@ -404,7 +410,7 @@ int BPlusTree::bPlusInsert( int relId, char attrName[ ATTR_SIZE ], Attribute att
 
 	if ( res == E_DISKFULL /*insertIntoLeaf() returns E_DISKFULL */ ) {
 		// destroy the existing B+ tree by passing the rootBlock to bPlusDestroy().
-		bPlusDestroy( rootBlock );
+		assert_res( BPlusTree::bPlusDestroy( rootBlock ), SUCCESS );
 
 		// update the rootBlock of attribute catalog cache entry to -1 using
 		// AttrCacheTable::setAttrCatEntry().
@@ -473,7 +479,6 @@ int BPlusTree::insertIntoLeaf( int relId, char attrName[ ATTR_SIZE ], int blockN
 	// the following variable will be used to store a list of index entries with
 	// existing indices + the new index to insert
 	std::vector<Index> indices( leafHeader.numEntries );
-	Index leafEntry;
 
 	/*
 	Iterate through all the entries in the block and copy them to the array
@@ -484,16 +489,17 @@ int BPlusTree::insertIntoLeaf( int relId, char attrName[ ATTR_SIZE ], int blockN
 	structs
 	*/
 	int insertIndex = -1;
+	bool got		= false;
 
 	for ( int i = 0; i < leafHeader.numEntries; i++ ) {
-		assert_res( leafBuffer.getEntry( &leafEntry, i ), SUCCESS );
-		indices[ i ] = leafEntry;
-		if ( compareAttrs( &indexEntry.attrVal, &leafEntry.attrVal, attrCatEntry.attrType ) > 0 ) {
+		assert_res( leafBuffer.getEntry( &indices[ i ], i ), SUCCESS );
+		if ( !got && compareAttrs( &indices[ i ].attrVal, &indexEntry.attrVal, attrCatEntry.attrType ) >= 0 ) {
 			insertIndex = i;
+			got			= true;
 		}
 	}
 	// leafblock is empty
-	if ( insertIndex == -1 ) {
+	if ( !got ) {
 		indices.push_back( indexEntry );
 	} else {
 		indices.insert( indices.begin( ) + insertIndex, indexEntry );
@@ -530,7 +536,7 @@ int BPlusTree::insertIntoLeaf( int relId, char attrName[ ATTR_SIZE ], int blockN
 		return E_DISKFULL;
 
 	int res = SUCCESS;
-	if ( blockNum != attrCatEntry.rootBlock /* the current leaf block was not the root */ ) {
+	if ( leafHeader.pblock != -1 /* the current leaf block was not the root */ ) {
 		// check pblock in header
 		// insert the middle value from `indices` into the parent block using the
 		// insertIntoInternal() function. (i.e the last value of the left block)
@@ -597,9 +603,9 @@ int BPlusTree::splitLeaf( int leafBlockNum, Index indices[] ) {
 	// and update the header of leftBlk using BlockBuffer::setHeader() */
 	assert_res( leftBlk.setHeader( &leftBlkHeader ), SUCCESS );
 	// set the first 32 entries of leftBlk = the first 32 entries of indices array
-	for ( int i = 0; i < ( MAX_KEYS_LEAF + 1 ) / 2; i++ ) {
+	for ( int i = 0; i < leftBlkHeader.numEntries; i++ ) {
 		assert_res( leftBlk.setEntry( &indices[ i ], i ), SUCCESS );
-		assert_res( rightBlk.setEntry( &indices[ i + 32 ], i ), SUCCESS );
+		assert_res( rightBlk.setEntry( &indices[ i + MIDDLE_INDEX_LEAF + 1 ], i ), SUCCESS );
 	}
 	// and set the first 32 entries of newRightBlk = the next 32 entries of
 	// indices array using IndLeaf::setEntry().
@@ -636,13 +642,14 @@ int BPlusTree::insertIntoInternal(
 	entry to the rChild of the newly added entry.
 	*/
 	int insertIndex = -1;
-	InternalEntry intEntry;
+	bool got		= false;
 
 	for ( int i = 0; i < intBlkHeader.numEntries; i++ ) {
-		assert_res( intBlk.getEntry( &intEntry, i ), SUCCESS );
-		internalEntries[ i ] = intEntry;
-		if ( compareAttrs( &intIndexEntry.attrVal, &intEntry.attrVal, attrCatEntry.attrType ) > 0 ) {
+		assert_res( intBlk.getEntry( &internalEntries[ i ], i ), SUCCESS );
+		if ( !got &&
+			 compareAttrs( &internalEntries[ i ].attrVal, &intIndexEntry.attrVal, attrCatEntry.attrType ) >= 0 ) {
 			insertIndex = i;
+			got			= true;
 		}
 	}
 	// leafblock is empty
@@ -683,7 +690,7 @@ int BPlusTree::insertIntoInternal(
 		// Using bPlusDestroy(), destroy the right subtree, rooted at
 		// intEntry.rChild. This corresponds to the tree built up till now that has
 		// not yet been connected to the existing B+ Tree
-		bPlusDestroy( intEntry.rChild );
+		bPlusDestroy( intIndexEntry.rChild );
 
 		return E_DISKFULL;
 	}
@@ -692,11 +699,6 @@ int BPlusTree::insertIntoInternal(
 	if ( intBlkHeader.pblock != -1 /* the current block was not the root */ ) { // (check pblock in header)
 		// insert the middle value from `internalEntries` into the parent block
 		// using the insertIntoInternal() function (recursively).
-		res = BPlusTree::insertIntoInternal(
-			relId, attrName, intBlkHeader.pblock, internalEntries[ ( MAX_KEYS_LEAF + 1 ) / 2 ] );
-		if ( res != SUCCESS )
-			return res;
-
 		// the middle value will be at index 50 (given by constant
 		// MIDDLE_INDEX_INTERNAL)
 		InternalEntry a;
@@ -747,8 +749,8 @@ int BPlusTree::splitInternal( int intBlockNum, InternalEntry internalEntries[] )
 	HeadInfo leftBlkHeader, rightBlkHeader;
 	// get the headers of left block and right block using
 	// BlockBuffer::getHeader()
-	leftBlk.getHeader( &leftBlkHeader );
-	rightBlk.getHeader( &rightBlkHeader );
+	assert_res(leftBlk.getHeader( &leftBlkHeader ), SUCCESS);
+	assert_res(rightBlk.getHeader( &rightBlkHeader ), SUCCESS);
 
 	// set rightBlkHeader with the following values
 	// - number of entries = (MAX_KEYS_INTERNAL)/2 = 50
@@ -756,7 +758,7 @@ int BPlusTree::splitInternal( int intBlockNum, InternalEntry internalEntries[] )
 	// - pblock = pblock of leftBlk
 	rightBlkHeader.pblock = leftBlkHeader.pblock;
 	// and update the header of rightBlk using BlockBuffer::setHeader()
-	rightBlk.setHeader( &rightBlkHeader );
+	assert_res(rightBlk.setHeader( &rightBlkHeader ), SUCCESS);
 
 	// set leftBlkHeader with the following values
 	// - number of entries = (MAX_KEYS_INTERNAL)/2 = 50
@@ -764,7 +766,7 @@ int BPlusTree::splitInternal( int intBlockNum, InternalEntry internalEntries[] )
 	// - rblock = rightBlkNum
 	leftBlkHeader.rblock = rightBlkNum;
 	// and update the header using BlockBuffer::setHeader()
-	leftBlk.setHeader( &leftBlkHeader );
+	assert_res(leftBlk.setHeader( &leftBlkHeader ), SUCCESS);
 
 	/*
 	- set the first 50 entries of leftBlk = index 0 to 49 of internalEntries
@@ -785,16 +787,14 @@ int BPlusTree::splitInternal( int intBlockNum, InternalEntry internalEntries[] )
 	for ( int i = 0; i < MAX_KEYS_INTERNAL / 2; i++ /* each child block of the new right block */ ) {
 		// declare an instance of BlockBuffer to access the child block using
 		// constructor 2
-		InternalEntry entry;
-		rightBlk.getEntry( &entry, i );
-		BlockBuffer childBuffer( entry.lChild );
+		BlockBuffer childBuffer( internalEntries[ i + ( MAX_KEYS_INTERNAL / 2 ) ].lChild );
 		HeadInfo childHeader;
-		childBuffer.getHeader( &childHeader );
+		assert_res(childBuffer.getHeader( &childHeader ), SUCCESS);
 
 		childHeader.pblock = rightBlkNum;
 		// update pblock of the block to rightBlkNum using BlockBuffer::getHeader()
 		// and BlockBuffer::setHeader().
-		childBuffer.setHeader( &childHeader );
+		assert_res(childBuffer.setHeader( &childHeader ), SUCCESS);
 	}
 
 	return rightBlkNum;
@@ -818,7 +818,7 @@ int BPlusTree::createNewRoot( int relId, char attrName[ ATTR_SIZE ], Attribute a
 		// Using bPlusDestroy(), destroy the right subtree, rooted at rChild.
 		// This corresponds to the tree built up till now that has not yet been
 		// connected to the existing B+ Tree
-		BPlusTree::bPlusDestroy( rChild );
+		assert_res(BPlusTree::bPlusDestroy( rChild ), SUCCESS);
 
 		return E_DISKFULL;
 	}
