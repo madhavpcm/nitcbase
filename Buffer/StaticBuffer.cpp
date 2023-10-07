@@ -92,11 +92,11 @@ int StaticBuffer::setDirtyBit( int blockNum ) {
 	if ( blockNum < 0 || blockNum >= DISK_BLOCKS )
 		return E_OUTOFBOUND;
 
-	int bufferNum = StaticBuffer::getBufferNum( blockNum );
-	if ( bufferNum == E_BLOCKNOTINBUFFER )
+    int bufferNum = StaticBuffer::getBufferNum(blockNum);
+	if(bufferNum == E_BLOCKNOTINBUFFER)
 		return E_BLOCKNOTINBUFFER;
 
-	if ( bufferNum == E_OUTOFBOUND )
+	if(bufferNum == E_OUTOFBOUND)
 		return E_OUTOFBOUND;
 
 	metainfo[ bufferNum ].dirty = true;

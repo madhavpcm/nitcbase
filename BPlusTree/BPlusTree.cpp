@@ -130,7 +130,6 @@ RecId BPlusTree::bPlusSearch( int relId, char attrName[ ATTR_SIZE ], Attribute a
 					break;
 				}
 			}
-			std::cout << '\n';
 
 			if ( i < intHead.numEntries /* such an entry is found*/ ) {
 				// move to the left child of that entry
@@ -277,7 +276,7 @@ int BPlusTree::bPlusCreate( int relId, char attrName[ ATTR_SIZE ] ) {
 		std::unique_ptr<unsigned char[]> currSlotMap( new unsigned char[ relCatEntry.numSlotsPerBlk ] );
 
 		// load the slot map into slotMap using RecBuffer::getSlotMap().
-		assert_res(currBuffer.getSlotMap( currSlotMap.get( ) ), SUCCESS);
+		assert_res( currBuffer.getSlotMap( currSlotMap.get( ) ), SUCCESS );
 
 		// for every occupied slot of the block
 		for ( int i = 0; i < relCatEntry.numSlotsPerBlk; i++ ) {
@@ -749,8 +748,8 @@ int BPlusTree::splitInternal( int intBlockNum, InternalEntry internalEntries[] )
 	HeadInfo leftBlkHeader, rightBlkHeader;
 	// get the headers of left block and right block using
 	// BlockBuffer::getHeader()
-	assert_res(leftBlk.getHeader( &leftBlkHeader ), SUCCESS);
-	assert_res(rightBlk.getHeader( &rightBlkHeader ), SUCCESS);
+	assert_res( leftBlk.getHeader( &leftBlkHeader ), SUCCESS );
+	assert_res( rightBlk.getHeader( &rightBlkHeader ), SUCCESS );
 
 	// set rightBlkHeader with the following values
 	// - number of entries = (MAX_KEYS_INTERNAL)/2 = 50
@@ -758,7 +757,7 @@ int BPlusTree::splitInternal( int intBlockNum, InternalEntry internalEntries[] )
 	// - pblock = pblock of leftBlk
 	rightBlkHeader.pblock = leftBlkHeader.pblock;
 	// and update the header of rightBlk using BlockBuffer::setHeader()
-	assert_res(rightBlk.setHeader( &rightBlkHeader ), SUCCESS);
+	assert_res( rightBlk.setHeader( &rightBlkHeader ), SUCCESS );
 
 	// set leftBlkHeader with the following values
 	// - number of entries = (MAX_KEYS_INTERNAL)/2 = 50
@@ -766,7 +765,7 @@ int BPlusTree::splitInternal( int intBlockNum, InternalEntry internalEntries[] )
 	// - rblock = rightBlkNum
 	leftBlkHeader.rblock = rightBlkNum;
 	// and update the header using BlockBuffer::setHeader()
-	assert_res(leftBlk.setHeader( &leftBlkHeader ), SUCCESS);
+	assert_res( leftBlk.setHeader( &leftBlkHeader ), SUCCESS );
 
 	/*
 	- set the first 50 entries of leftBlk = index 0 to 49 of internalEntries
@@ -789,12 +788,12 @@ int BPlusTree::splitInternal( int intBlockNum, InternalEntry internalEntries[] )
 		// constructor 2
 		BlockBuffer childBuffer( internalEntries[ i + ( MAX_KEYS_INTERNAL / 2 ) ].lChild );
 		HeadInfo childHeader;
-		assert_res(childBuffer.getHeader( &childHeader ), SUCCESS);
+		assert_res( childBuffer.getHeader( &childHeader ), SUCCESS );
 
 		childHeader.pblock = rightBlkNum;
 		// update pblock of the block to rightBlkNum using BlockBuffer::getHeader()
 		// and BlockBuffer::setHeader().
-		assert_res(childBuffer.setHeader( &childHeader ), SUCCESS);
+		assert_res( childBuffer.setHeader( &childHeader ), SUCCESS );
 	}
 
 	return rightBlkNum;
@@ -818,7 +817,7 @@ int BPlusTree::createNewRoot( int relId, char attrName[ ATTR_SIZE ], Attribute a
 		// Using bPlusDestroy(), destroy the right subtree, rooted at rChild.
 		// This corresponds to the tree built up till now that has not yet been
 		// connected to the existing B+ Tree
-		assert_res(BPlusTree::bPlusDestroy( rChild ), SUCCESS);
+		assert_res( BPlusTree::bPlusDestroy( rChild ), SUCCESS );
 
 		return E_DISKFULL;
 	}

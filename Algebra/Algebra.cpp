@@ -194,13 +194,10 @@ int Algebra::insert( char relName[ ATTR_SIZE ], int nAttrs, char record[][ ATTR_
 			} else {
 				return E_ATTRTYPEMISMATCH;
 			}
-			std::cout << recordValues[ i ].nVal << ' ';
 		} else if ( type == STRING ) {
 			std::strcpy( recordValues[ i ].sVal, record[ i ] );
-			std::cout << recordValues[ i ].sVal << ' ';
 		}
 	}
-	std::cout << '\n';
 
 	// insert the record by calling BlockAccess::insert() function
 	// let retVal denote the return value of insert call
